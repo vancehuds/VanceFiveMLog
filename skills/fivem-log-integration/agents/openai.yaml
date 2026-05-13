@@ -1,0 +1,4 @@
+interface:
+  display_name: "FiveM Log Integration"
+  short_description: "Wire FiveM resources into VanceFiveMLog"
+  default_prompt: "Use $fivem-log-integration to connect this FiveM resource to VanceFiveMLog logging."

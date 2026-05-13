@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+!.env.example
+bin/
+tmp/
+server
+*.log
+*.key
+*.pem
+*.crt
+

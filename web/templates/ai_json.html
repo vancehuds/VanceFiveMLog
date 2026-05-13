@@ -1,0 +1,120 @@
+{{define "ai_json.html"}}
+{{template "shell-start" .}}
+{{if .Error}}<div class="error-box">{{.Error}}</div>{{end}}
+{{if .Notice}}<div class="notice">{{.Notice}}</div>{{end}}
+
+<section class="ai-json-hero">
+  <div>
+    <span class="chip {{if .AIJSONReady}}success{{else}}warning{{end}}">{{if .AIJSONReady}}AI READY{{else}}MANUAL MODE{{end}}</span>
+    <h2>AI JSON 解析方案</h2>
+    <p>Owner 可以用样例 JSON 生成字段、指标、列表、表格和原始片段的展示结构，保存后在日志详情中复用。</p>
+  </div>
+  <div class="ai-json-stat">
+    <strong>{{len .AIJSONMethods}}</strong>
+    <span>saved methods</span>
+  </div>
+</section>
+
+<section class="ai-json-workspace">
+  <div class="panel">
+    <div class="panel-head"><h2>生成 / 保存解析方案</h2><span class="chip info">OWNER</span></div>
+    <div class="panel-body">
+      <form class="ai-json-form" method="post" action="/ai-json/suggest" data-ai-json-form>
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <input type="hidden" name="id" value="{{.AIJSONDraft.ID}}" data-ai-json-id>
+        <div class="ai-json-form-grid">
+          <label class="field">
+            <span>名称</span>
+            <input class="input" name="name" value="{{.AIJSONDraft.Name}}" placeholder="ox_inventory 物品差异">
+          </label>
+          <label class="field">
+            <span>来源</span>
+            <select class="select" name="source">
+              <option value="metadata" {{if eq .AIJSONDraft.Source "metadata"}}selected{{end}}>metadata</option>
+              <option value="event" {{if eq .AIJSONDraft.Source "event"}}selected{{end}}>完整事件</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>事件类型</span>
+            <input class="input" name="event_type" value="{{.AIJSONDraft.EventType}}" placeholder="inventory_diff">
+          </label>
+          <label class="field">
+            <span>Resource</span>
+            <input class="input" name="resource" value="{{.AIJSONDraft.Resource}}" placeholder="ox_inventory">
+          </label>
+        </div>
+        <label class="field">
+          <span>描述</span>
+          <input class="input" name="description" value="{{.AIJSONDraft.Description}}" placeholder="面向物品变化、数量差异和附加 metadata 的美化展示">
+        </label>
+        <label class="field">
+          <span>AI 指令</span>
+          <textarea class="textarea" name="prompt" rows="3" placeholder="说明你希望 AI 如何归纳字段、表格和标签">{{.AIJSONDraft.Prompt}}</textarea>
+        </label>
+        <div class="ai-json-editors">
+          <label class="field">
+            <span>样例 JSON</span>
+            <textarea class="textarea code-area" name="sample" rows="14" data-ai-json-sample placeholder='{"item":"markedbills","amount":5}'>{{.AIJSONDraft.Sample}}</textarea>
+          </label>
+          <label class="field">
+            <span>展示方案 JSON</span>
+            <textarea class="textarea code-area" name="spec" rows="14" data-ai-json-spec>{{.AIJSONDraft.Spec}}</textarea>
+          </label>
+        </div>
+        <div class="ai-json-spec-help">
+          <div>
+            <strong>支持格式</strong>
+            <span>text / number / currency / delta / time / date / clock / percent / duration / coords / boolean / list / json</span>
+          </div>
+          <div>
+            <strong>支持模块</strong>
+            <span>summary_template、badges、metrics、fields、sections、lists、tables、json_blocks；路径支持 dot path 和数组索引。</span>
+          </div>
+          <button class="btn" type="button" data-ai-json-format-spec><svg class="icon"><use href="#icon-refresh"></use></svg><span>格式化方案</span></button>
+          <button class="btn" type="button" data-ai-json-insert-template><svg class="icon"><use href="#icon-plus"></use></svg><span>填入完整模板</span></button>
+        </div>
+        <div class="ai-json-actions">
+          <div class="ai-json-generate-status" data-ai-json-generate-status role="status" aria-live="polite" hidden>
+            <span class="ai-json-spinner" aria-hidden="true"></span>
+            <span>AI 正在生成解析方案，请稍候...</span>
+          </div>
+          <button class="btn" type="submit" formaction="/ai-json/suggest" data-ai-json-generate>
+            <svg class="icon" data-ai-json-generate-icon><use href="#icon-sparkles"></use></svg>
+            <span data-ai-json-generate-label>AI 解析一次</span>
+          </button>
+          <button class="btn primary" type="submit" formaction="/ai-json/methods"><svg class="icon"><use href="#icon-save"></use></svg><span>保存为新方案</span></button>
+          <button class="btn" type="submit" data-ai-json-update><svg class="icon"><use href="#icon-refresh"></use></svg><span>更新选中方案</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <div class="panel-head"><h2>已保存方案</h2><span class="chip">{{len .AIJSONMethods}} methods</span></div>
+    <div class="ai-json-method-list">
+      {{range .AIJSONMethods}}
+      <article class="ai-json-method {{if not .Active}}disabled{{end}}" data-ai-json-method-card data-method='{{aiJSONMethodData .}}'>
+        <div>
+          <h3>{{.Name}}</h3>
+          <p>{{if .Description}}{{.Description}}{{else}}无描述{{end}}</p>
+          <div class="metadata-pills">
+            <span>{{.Source}}</span>
+            {{if .EventType}}<span>type={{.EventType}}</span>{{end}}
+            {{if .Resource}}<span>resource={{.Resource}}</span>{{end}}
+          </div>
+        </div>
+        <form class="toolbar" method="post" action="/ai-json/methods/{{.ID}}/toggle">
+          <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+          <button class="btn" type="button" data-load-ai-json-method><svg class="icon"><use href="#icon-eye"></use></svg><span>编辑</span></button>
+          <button class="btn" type="submit">{{if .Active}}停用{{else}}启用{{end}}</button>
+        </form>
+      </article>
+      {{else}}
+      <div class="empty">暂无保存的解析方案。</div>
+      {{end}}
+    </div>
+  </aside>
+</section>
+
+{{template "shell-end" .}}
+{{end}}

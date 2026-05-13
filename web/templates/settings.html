@@ -1,0 +1,193 @@
+{{define "settings.html"}}
+{{template "shell-start" .}}
+{{if .Error}}<div class="error-box">{{.Error}}</div>{{end}}
+{{if .Notice}}<div class="notice">{{.Notice}}</div>{{end}}
+{{if .NewAPIKey}}
+<div class="notice">
+  <strong>新的 API Key 仅显示一次：</strong>
+  <code class="mono">{{.NewAPIKey}}</code>
+</div>
+{{end}}
+{{if .Admin.CanManageSettings}}
+<section class="grid two">
+  <div class="panel">
+    <div class="panel-head"><h2>日志保留与时区</h2><span class="chip info">TIME</span></div>
+    <div class="panel-body">
+      <form class="settings-form" method="post" action="/settings">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <div class="settings-section">
+          <div class="field">
+            <label>RETENTION DAYS</label>
+            <input class="input" name="retention_days" type="number" min="1" value="{{.Retention}}">
+          </div>
+          <div class="field">
+            <label>TIME ZONE</label>
+            <input class="input" name="time_zone" list="time-zone-options" value="{{.TimeZone}}" placeholder="Asia/Shanghai" required>
+            <datalist id="time-zone-options">
+              <option value="Asia/Shanghai">
+              <option value="UTC">
+              <option value="Asia/Tokyo">
+              <option value="Asia/Singapore">
+              <option value="Europe/London">
+              <option value="Europe/Berlin">
+              <option value="America/New_York">
+              <option value="America/Los_Angeles">
+            </datalist>
+          </div>
+        </div>
+        {{if .Admin.IsOwner}}
+        <div class="settings-subpanel">
+          <div class="settings-subpanel-head">
+            <div>
+              <h3>AI JSON 提供商</h3>
+              <p>用于 AI JSON 页面生成解析方案，保存后立即生效。</p>
+            </div>
+            <span class="chip {{if .AIJSONReady}}success{{else}}warning{{end}}">{{if .AIJSONReady}}READY{{else}}NOT READY{{end}}</span>
+          </div>
+          <div class="ai-provider-grid">
+            <label class="field">
+              <span>Provider</span>
+              <select class="select" name="ai_json_provider" data-ai-provider-select>
+                <option value="openai" {{if eq .AIProvider.Provider "openai"}}selected{{end}}>OpenAI compatible</option>
+                <option value="custom" {{if eq .AIProvider.Provider "custom"}}selected{{end}}>Custom endpoint</option>
+                <option value="disabled" {{if eq .AIProvider.Provider "disabled"}}selected{{end}}>Disabled</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Base URL</span>
+              <input class="input" name="ai_json_base_url" value="{{.AIProvider.BaseURL}}" placeholder="https://api.openai.com/v1" data-ai-provider-input>
+            </label>
+            <label class="field">
+              <span>Model</span>
+              <input class="input" name="ai_json_model" value="{{.AIProvider.Model}}" placeholder="gpt-4o-mini" data-ai-provider-input>
+            </label>
+            <label class="field ai-key-field">
+              <span>API Key</span>
+              <input class="input" name="ai_json_api_key" type="password" autocomplete="new-password" placeholder="{{if .AIProviderKey}}已保存，留空则保留当前密钥{{else}}sk-...{{end}}" data-ai-provider-input>
+            </label>
+          </div>
+        </div>
+        {{end}}
+        <div class="settings-actions">
+          <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-save"></use></svg><span>保存</span></button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {{if .Admin.CanManageServers}}
+  <div class="panel">
+    <div class="panel-head"><h2>创建 FiveM 服务器</h2><span class="chip success">QBOX</span></div>
+    <div class="panel-body">
+      <form class="form-row" method="post" action="/servers">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <input class="input" name="name" placeholder="服务器名称" required>
+        <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-key"></use></svg><span>生成 API Key</span></button>
+      </form>
+    </div>
+  </div>
+  {{end}}
+</section>
+{{else if .Admin.CanManageServers}}
+<section class="panel">
+  <div class="panel-head"><h2>创建 FiveM 服务器</h2><span class="chip success">QBOX</span></div>
+  <div class="panel-body">
+    <form class="form-row" method="post" action="/servers">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+      <input class="input" name="name" placeholder="服务器名称" required>
+      <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-key"></use></svg><span>生成 API Key</span></button>
+    </form>
+  </div>
+</section>
+{{end}}
+
+{{if .Admin.CanManageServers}}
+<section class="panel" style="margin-top:12px">
+  <div class="panel-head"><h2>服务器 API Key 管理</h2><span class="chip">{{len .Servers}} servers</span></div>
+  <div class="panel-body">
+    <table class="table">
+      <thead><tr><th>Name</th><th>Status</th><th>Last Seen</th><th>Last Event</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>
+        {{range .Servers}}
+        <tr>
+          <td>{{.Name}}</td>
+          <td>
+            <span class="chip {{if .Active}}success{{else}}error{{end}}">{{if .Active}}ACTIVE{{else}}DISABLED{{end}}</span>
+            <span class="chip {{serverHealthClass .}}">{{serverHealth .}}</span>
+          </td>
+          <td class="mono">{{if .LastSeenAt}}{{formatTimePtr .LastSeenAt}}{{else}}never{{end}}</td>
+          <td class="mono">{{if .LastEventAt}}{{formatTimePtr .LastEventAt}}{{else}}never{{end}}</td>
+          <td class="mono">{{formatTime .CreatedAt}}</td>
+          <td>
+            <form class="toolbar" method="post">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+              <button class="btn primary" formaction="/servers/{{.ID}}/test-event" type="submit"><svg class="icon"><use href="#icon-database"></use></svg><span>测试事件</span></button>
+              <button class="btn danger" formaction="/servers/{{.ID}}/rotate-key" type="submit"><svg class="icon"><use href="#icon-key"></use></svg><span>轮换 Key</span></button>
+              <button class="btn" formaction="/servers/{{.ID}}/toggle" type="submit">{{if .Active}}停用{{else}}启用{{end}}</button>
+            </form>
+          </td>
+        </tr>
+        {{else}}
+        <tr><td colspan="6">暂无服务器。</td></tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+{{end}}
+
+{{if .Admin.CanManageAdmins}}
+<section class="grid two" style="margin-top:12px">
+  <div class="panel">
+    <div class="panel-head"><h2>管理员账号</h2><span class="chip info">{{len .Admins}} admins</span></div>
+    <div class="panel-body">
+      <table class="table">
+        <thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody>
+          {{range .Admins}}
+          <tr>
+            <td>{{.Username}}{{if eq .ID $.Admin.ID}} <span class="chip info">YOU</span>{{end}}</td>
+            <td class="mono">{{.Role}}</td>
+            <td><span class="chip {{if .Active}}success{{else}}error{{end}}">{{if .Active}}ACTIVE{{else}}DISABLED{{end}}</span></td>
+            <td class="mono">{{formatTime .CreatedAt}}</td>
+            <td>
+              <form class="toolbar" method="post" action="/admins/{{.ID}}/toggle">
+                <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+                <button class="btn" type="submit" {{if eq .ID $.Admin.ID}}disabled{{end}}>{{if .Active}}停用{{else}}启用{{end}}</button>
+              </form>
+            </td>
+          </tr>
+          {{else}}
+          <tr><td colspan="5">暂无管理员。</td></tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>新增 / 重置管理员</h2><span class="chip warning">ACCESS</span></div>
+    <div class="panel-body stack">
+      <form class="stack" method="post" action="/admins">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <input class="input" name="username" placeholder="用户名" required>
+        <input class="input" name="password" type="password" placeholder="初始密码" required>
+        <select class="select" name="role">
+          <option value="admin">admin</option>
+          <option value="owner">owner</option>
+          <option value="viewer">viewer</option>
+        </select>
+        <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-user"></use></svg><span>创建管理员</span></button>
+      </form>
+      <form class="stack" method="post" data-reset-admin-form>
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <select class="select" name="admin_id" data-admin-reset-select>
+          {{range .Admins}}<option value="{{.ID}}">{{.Username}}</option>{{end}}
+        </select>
+        <input class="input" name="password" type="password" placeholder="新密码" required>
+        <button class="btn danger" type="submit"><svg class="icon"><use href="#icon-key"></use></svg><span>重置密码</span></button>
+      </form>
+    </div>
+  </div>
+</section>
+{{end}}
+{{template "shell-end" .}}
+{{end}}

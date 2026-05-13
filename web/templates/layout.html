@@ -1,0 +1,240 @@
+{{define "shell-start"}}
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b0d">
+  <title>{{.Title}} · VanceFlog</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/app.css">
+  <script defer src="/static/app.js"></script>
+</head>
+<body data-time-zone="{{.TimeZone}}">
+  <svg class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="icon-dashboard" viewBox="0 0 24 24"><path d="M4 13.5a8 8 0 1 1 16 0"/><path d="M12 13l4-4"/><path d="M8 20h8"/><path d="M12 17v3"/></symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 3.5 3.5"/></symbol>
+    <symbol id="icon-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="icon-users" viewBox="0 0 24 24"><path d="M16 19a6 6 0 0 0-12 0"/><circle cx="10" cy="8" r="4"/><path d="M20 19a5 5 0 0 0-3.5-4.8"/><path d="M16 4.5a4 4 0 0 1 0 7"/></symbol>
+    <symbol id="icon-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.1 0l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.1 0l-2 2a5 5 0 0 0 7.1 7.1l1.1-1.1"/></symbol>
+    <symbol id="icon-map" viewBox="0 0 24 24"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2Z"/><path d="M9 4v14"/><path d="M15 6v14"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3"/><path d="M12 18.5v3"/><path d="m4.8 4.8 2.1 2.1"/><path d="m17.1 17.1 2.1 2.1"/><path d="M2.5 12h3"/><path d="M18.5 12h3"/><path d="m4.8 19.2 2.1-2.1"/><path d="m17.1 6.9 2.1-2.1"/></symbol>
+    <symbol id="icon-log-out" viewBox="0 0 24 24"><path d="M10 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v2"/><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/></symbol>
+    <symbol id="icon-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="icon-route" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h4.5a4.5 4.5 0 0 0 0-9H10a4 4 0 0 1 0-8h5"/></symbol>
+    <symbol id="icon-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+    <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="icon-alert" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="icon-server" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="7" rx="2"/><rect x="4" y="14" width="16" height="7" rx="2"/><path d="M8 6.5h.01"/><path d="M8 17.5h.01"/></symbol>
+    <symbol id="icon-crosshair" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/></symbol>
+    <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+    <symbol id="icon-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18.7 11A7 7 0 0 0 6.2 7.8L4 10"/><path d="M5.3 13A7 7 0 0 0 17.8 16.2L20 14"/></symbol>
+    <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M8 5v14"/><path d="M16 5v14"/></symbol>
+    <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M7 7l1 14h8l1-14"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
+    <symbol id="icon-filter" viewBox="0 0 24 24"><path d="M4 5h16"/><path d="M7 12h10"/><path d="M10 19h4"/></symbol>
+    <symbol id="icon-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12 21 2"/><path d="m16 7 2 2"/><path d="m19 4 2 2"/></symbol>
+    <symbol id="icon-save" viewBox="0 0 24 24"><path d="M5 3h12l2 2v16H5Z"/><path d="M8 3v6h8V3"/><path d="M8 21v-7h8v7"/></symbol>
+    <symbol id="icon-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></symbol>
+    <symbol id="icon-sparkles" viewBox="0 0 24 24"><path d="m12 3 1.7 5.2L19 10l-5.3 1.8L12 17l-1.7-5.2L5 10l5.3-1.8Z"/><path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8Z"/><path d="m5 4 .7 1.8L8 6.5l-2.3.7L5 9l-.7-1.8L2 6.5l2.3-.7Z"/></symbol>
+    <symbol id="icon-github" viewBox="0 0 24 24"><path d="M12 .8a11.2 11.2 0 0 0-3.5 21.8c.56.1.76-.24.76-.54v-2.1c-3.12.68-3.78-1.32-3.78-1.32-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 .1.77 2.42 2.95 1.72.1-.73.39-1.22.71-1.5-2.49-.28-5.1-1.24-5.1-5.54 0-1.23.44-2.23 1.16-3.02-.12-.29-.5-1.43.11-2.98 0 0 .94-.3 3.09 1.15A10.7 10.7 0 0 1 12 6.9c.96 0 1.92.13 2.82.38 2.15-1.46 3.09-1.15 3.09-1.15.61 1.55.23 2.7.11 2.98.72.79 1.16 1.79 1.16 3.02 0 4.31-2.62 5.26-5.12 5.54.4.35.76 1.03.76 2.08v3.08c0 .3.2.64.77.53A11.2 11.2 0 0 0 12 .8Z"/></symbol>
+  </svg>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><img src="/static/favicon.svg" alt=""></span>
+        <div class="brand-text">
+          <strong>VanceFlog</strong>
+          <span>FiveM Audit Console</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a class="{{if eq .Active "dashboard"}}active{{end}}" href="/"><svg class="icon"><use href="#icon-dashboard"></use></svg><span>实时日志</span></a>
+        <a class="{{if eq .Active "logs"}}active{{end}}" href="/logs"><svg class="icon"><use href="#icon-search"></use></svg><span>日志检索</span></a>
+        <a class="{{if eq .Active "players"}}active{{end}}" href="/players/all"><svg class="icon"><use href="#icon-users"></use></svg><span>玩家时间轴</span></a>
+        <a class="{{if eq .Active "accounts"}}active{{end}}" href="/accounts"><svg class="icon"><use href="#icon-link"></use></svg><span>账户关联</span></a>
+        <a class="{{if eq .Active "geo"}}active{{end}}" href="/geo"><svg class="icon"><use href="#icon-map"></use></svg><span>地理轨迹</span></a>
+        {{if .Admin.IsOwner}}
+        <a class="{{if eq .Active "ai-json"}}active{{end}}" href="/ai-json"><svg class="icon"><use href="#icon-sparkles"></use></svg><span>AI JSON</span></a>
+        {{end}}
+        {{if .Admin.CanManageServers}}
+        <a class="{{if eq .Active "settings"}}active{{end}}" href="/settings"><svg class="icon"><use href="#icon-settings"></use></svg><span>系统设置</span></a>
+        {{end}}
+      </nav>
+      <a class="source-card" href="https://github.com/vancehuds/VanceFiveMLog" target="_blank" rel="noopener noreferrer" aria-label="打开 GitHub 开源仓库">
+        <span class="source-card-icon" aria-hidden="true"><svg class="github-icon"><use href="#icon-github"></use></svg></span>
+        <span class="source-card-copy">
+          <strong>GitHub 开源仓库</strong>
+          <span>vancehuds/VanceFiveMLog</span>
+        </span>
+      </a>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>{{.Title}}</h1>
+          <div class="meta">admin={{.Admin.Username}} · retention={{.Retention}}d · tz={{.TimeZone}}</div>
+        </div>
+        <form method="post" action="/logout">
+          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+          <button class="btn" type="submit"><svg class="icon"><use href="#icon-log-out"></use></svg><span>退出</span></button>
+        </form>
+      </header>
+{{end}}
+
+{{define "shell-end"}}
+      <textarea id="ai-json-methods" hidden readonly>{{aiJSONMethods .AIJSONMethods}}</textarea>
+      <dialog class="log-dialog" data-log-dialog>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>日志详情</h2>
+            <button class="btn" type="button" data-close-log><svg class="icon"><use href="#icon-x"></use></svg><span>关闭</span></button>
+          </div>
+          <div class="panel-body">
+            <div class="detail-grid" data-log-detail></div>
+            <div data-log-insight></div>
+            {{if .Admin.CanManageLogs}}
+            <section class="review-panel" data-review-panel hidden>
+              <div class="review-panel-head">
+                <div>
+                  <h3>处置记录</h3>
+                  <span data-review-note>状态、备注与归档会记录管理员操作</span>
+                </div>
+                <span class="chip info" data-review-event-id></span>
+              </div>
+              <form class="review-form" method="post" data-review-form>
+                <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                <input type="hidden" name="return_to" value="" data-return-to>
+                <div class="review-controls">
+                  <label>
+                    <span>状态</span>
+                    <select class="select" name="status" data-review-status>
+                      <option value="normal">正常</option>
+                      <option value="suspicious">可疑</option>
+                      <option value="violation">违规</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>备注</span>
+                    <textarea class="textarea" name="note" rows="3" data-review-note-field placeholder="调查结论、证据或后续动作"></textarea>
+                  </label>
+                </div>
+                <div class="review-actions">
+                  <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-save"></use></svg><span>保存处置</span></button>
+                  <button class="btn" type="submit" data-review-archive formaction=""><svg class="icon"><use href="#icon-archive"></use></svg><span>归档</span></button>
+                </div>
+              </form>
+            </section>
+            {{end}}
+            <section class="json-panel">
+              <div class="json-toolbar">
+                <div>
+                  <h3 data-log-json-title>Metadata JSON</h3>
+                  <span data-log-json-note>格式化显示</span>
+                </div>
+                <div class="json-tools">
+                  {{if .Admin.IsOwner}}
+                  <form class="inline-json-import" method="post" action="/ai-json" data-ai-json-import-form>
+                    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+                    <input type="hidden" name="source" value="metadata" data-ai-json-import-source>
+                    <input type="hidden" name="event_type" value="" data-ai-json-import-event-type>
+                    <input type="hidden" name="resource" value="" data-ai-json-import-resource>
+                    <input type="hidden" name="sample" value="" data-ai-json-import-sample>
+                    <button class="btn" type="submit"><svg class="icon"><use href="#icon-sparkles"></use></svg><span>导入 AI JSON</span></button>
+                  </form>
+                  {{end}}
+                  <select class="select compact" data-ai-json-method aria-label="AI JSON 解析方法">
+                    <option value="">AI 解析方案</option>
+                  </select>
+                  <div class="segmented-control" aria-label="JSON 显示范围">
+                    <button type="button" data-json-view="metadata" class="active">Metadata</button>
+                    <button type="button" data-json-view="event">完整事件</button>
+                  </div>
+                </div>
+              </div>
+              <div data-ai-json-render></div>
+              <pre class="detail-json" data-log-json>{}</pre>
+            </section>
+          </div>
+        </div>
+      </dialog>
+    </main>
+  </div>
+</body>
+</html>
+{{end}}
+
+{{define "pagination"}}
+{{if .Page.Total}}
+<nav class="pagination" aria-label="分页">
+  <div class="page-summary">
+    <strong>{{.Page.From}}-{{.Page.To}}</strong>
+    <span>/ {{.Page.Total}} · 第 {{.Page.Current}} / {{.Page.TotalPages}} 页</span>
+  </div>
+  <div class="page-controls">
+    {{if .Page.HasPrev}}
+      <a class="page-btn page-nav" href="{{queryWithOffset .Query .Page.PrevOffset}}" aria-label="上一页">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <span>上一页</span>
+      </a>
+    {{else}}
+      <span class="page-btn page-nav disabled">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <span>上一页</span>
+      </span>
+    {{end}}
+
+    <div class="page-numbers">
+      {{range .Page.Items}}
+        {{if .Gap}}
+        <span class="page-gap">...</span>
+        {{else if .Active}}
+        <span class="page-btn active" aria-current="page">{{.Number}}</span>
+        {{else}}
+        <a class="page-btn" href="{{queryWithPage $.Query $.Page .}}">{{.Number}}</a>
+        {{end}}
+      {{end}}
+    </div>
+
+    {{if .Page.HasNext}}
+      <a class="page-btn page-nav" href="{{queryWithOffset .Query .Page.NextOffset}}" aria-label="下一页">
+        <span>下一页</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </a>
+    {{else}}
+      <span class="page-btn page-nav disabled">
+        <span>下一页</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </span>
+    {{end}}
+  </div>
+</nav>
+{{else}}
+<div class="pagination empty-pagination"><span>0 rows</span></div>
+{{end}}
+{{end}}
+
+{{define "log-row"}}
+<article class="log-row {{.Severity}}" data-log-row data-event='{{eventJSON .}}'>
+  <time>{{formatClock .OccurredAt}}</time>
+  <a class="event-type" href="{{queryURL "/logs" "event_type" .EventType}}">{{.EventType}}</a>
+  <div class="message">
+    <strong>{{eventActor .}}</strong>
+    <span class="message-summary">{{eventSummary .}}</span>
+    <p>{{if .License}}{{shortID .License}}{{else}}{{.CitizenID}}{{end}}{{if .Discord}} · {{shortID .Discord}}{{end}}{{if .Steam}} · {{shortID .Steam}}{{end}}</p>
+    {{$chips := eventMetaChips .}}{{if $chips}}
+    <div class="meta-chips">
+      {{range $chips}}<span>{{.}}</span>{{end}}
+    </div>
+    {{end}}
+  </div>
+  <code>{{.ServerName}}</code>
+  <div class="row-actions">
+    {{if playerIdentifier .}}<a class="chip info" href="/players/{{urlPath (playerIdentifier .)}}"><svg class="chip-icon"><use href="#icon-user"></use></svg><span>玩家</span></a>{{end}}
+    {{if .CoordsX}}<a class="chip success" href="{{queryURL "/geo" "player" (playerIdentifier .)}}"><svg class="chip-icon"><use href="#icon-crosshair"></use></svg><span>坐标</span></a>{{end}}
+    <button class="chip {{.Severity}}" type="button" data-open-log><svg class="chip-icon"><use href="#icon-eye"></use></svg><span>{{if .Resource}}{{.Resource}}{{else}}{{.Severity}}{{end}}</span></button>
+  </div>
+</article>
+{{end}}

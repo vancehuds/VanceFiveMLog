@@ -1,0 +1,165 @@
+{{define "logs.html"}}
+{{template "shell-start" .}}
+<section class="panel">
+  <div class="panel-head"><h2>筛选器</h2><span class="chip info">QUERY</span></div>
+  <div class="panel-body">
+    <div class="quick-ranges" data-quick-ranges>
+      <button class="chip" type="button" data-range-minutes="15">最近 15 分钟</button>
+      <button class="chip" type="button" data-range-minutes="60">最近 1 小时</button>
+      <button class="chip" type="button" data-range-minutes="1440">最近 24 小时</button>
+      <button class="chip" type="button" data-range-minutes="10080">最近 7 天</button>
+      <a class="chip" href="/logs">清除筛选</a>
+    </div>
+    <form method="get" action="/logs" id="log-filter-form">
+      <div class="filter-grid">
+        <div class="filter-field">
+          <label for="filter-q">Search</label>
+          <input class="input" id="filter-q" name="q" placeholder="Keywords / Player / IDs" value="{{index .Query "q"}}">
+        </div>
+        <div class="filter-field">
+          <label for="filter-server">Server</label>
+          <select class="select" id="filter-server" name="server_id">
+            <option value="">All Servers</option>
+            {{range .Servers}}
+            <option value="{{.ID}}" {{if eq (index $.Query "server_id") (printf "%d" .ID)}}selected{{end}}>{{.Name}}</option>
+            {{end}}
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filter-event">Event Type</label>
+          <input class="input" id="filter-event" name="event_type" placeholder="e.g. player_joined" value="{{index .Query "event_type"}}">
+        </div>
+        <div class="filter-field">
+          <label for="filter-severity">Severity</label>
+          <select class="select" id="filter-severity" name="severity">
+            <option value="">All</option>
+            <option value="info" {{if eq (index .Query "severity") "info"}}selected{{end}}>Info</option>
+            <option value="success" {{if eq (index .Query "severity") "success"}}selected{{end}}>Success</option>
+            <option value="warning" {{if eq (index .Query "severity") "warning"}}selected{{end}}>Warning</option>
+            <option value="error" {{if eq (index .Query "severity") "error"}}selected{{end}}>Error</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filter-review">Review</label>
+          <select class="select" id="filter-review" name="review_status">
+            <option value="">All Status</option>
+            <option value="normal" {{if eq (index .Query "review_status") "normal"}}selected{{end}}>正常</option>
+            <option value="suspicious" {{if eq (index .Query "review_status") "suspicious"}}selected{{end}}>可疑</option>
+            <option value="violation" {{if eq (index .Query "review_status") "violation"}}selected{{end}}>违规</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filter-archive">Archive</label>
+          <select class="select" id="filter-archive" name="archive">
+            <option value="" {{if or (eq (index .Query "archive") "") (eq (index .Query "archive") "active")}}selected{{end}}>未归档</option>
+            <option value="include_archived" {{if eq (index .Query "archive") "include_archived"}}selected{{end}}>包含归档</option>
+            <option value="archived_only" {{if eq (index .Query "archive") "archived_only"}}selected{{end}}>仅归档</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filter-player">Player Info</label>
+          <input class="input" id="filter-player" name="player" placeholder="Name / License / Discord" value="{{index .Query "player"}}">
+        </div>
+        <div class="filter-field">
+          <label for="filter-resource">Resource</label>
+          <input class="input" id="filter-resource" name="resource" placeholder="e.g. qb-core" value="{{index .Query "resource"}}">
+        </div>
+        <div class="filter-field">
+          <label for="filter-metadata">Metadata JSON</label>
+          <input class="input" id="filter-metadata" name="metadata" placeholder='{"item":"cash"}' value="{{index .Query "metadata"}}">
+        </div>
+        <div class="filter-field">
+          <label for="filter-since">Since</label>
+          <input class="input" id="filter-since" name="since" type="datetime-local" value="{{index .Query "since_local"}}">
+        </div>
+        <div class="filter-field">
+          <label for="filter-until">Until</label>
+          <input class="input" id="filter-until" name="until" type="datetime-local" value="{{index .Query "until_local"}}">
+        </div>
+        <div class="filter-field">
+          <label for="filter-limit">Limit</label>
+          <select class="select" id="filter-limit" name="limit">
+            <option value="50" {{if eq (index .Query "limit") "50"}}selected{{end}}>50 rows</option>
+            <option value="100" {{if or (eq (index .Query "limit") "") (eq (index .Query "limit") "100")}}selected{{end}}>100 rows</option>
+            <option value="250" {{if eq (index .Query "limit") "250"}}selected{{end}}>250 rows</option>
+            <option value="500" {{if eq (index .Query "limit") "500"}}selected{{end}}>500 rows</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <input type="hidden" name="offset" value="0">
+        <button class="btn" type="button" data-filter-field="severity" data-filter-value="warning"><svg class="icon"><use href="#icon-alert"></use></svg><span>警告</span></button>
+        <button class="btn" type="button" data-filter-field="event_type" data-filter-value="money_change"><svg class="icon"><use href="#icon-filter"></use></svg><span>资金</span></button>
+        <button class="btn" type="button" data-filter-field="q" data-filter-value="inventory"><svg class="icon"><use href="#icon-filter"></use></svg><span>物品</span></button>
+        <button class="btn" type="submit" formaction="/logs/export.csv"><svg class="icon"><use href="#icon-download"></use></svg><span>导出 CSV</span></button>
+        <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-search"></use></svg><span>查询</span></button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="panel" style="margin-top:12px">
+  <form method="post" data-log-bulk-form>
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    <input type="hidden" name="return_to" value="" data-return-to>
+    {{template "query-hidden-fields" .Query}}
+    <div class="panel-head">
+      <div class="log-result-title">
+        <label class="select-all">
+          <input type="checkbox" data-select-page-logs>
+          <span>日志结果</span>
+        </label>
+        <span class="chip info" data-selection-count>0 selected</span>
+      </div>
+      <div class="toolbar log-result-toolbar">
+        {{if .Admin.CanManageLogs}}
+        <button class="btn" formaction="/logs/bulk/archive" type="submit" data-bulk-action="archive"><svg class="icon"><use href="#icon-archive"></use></svg><span>归档</span></button>
+        {{end}}
+        {{template "pagination" .}}
+      </div>
+    </div>
+    <div class="log-list managed-log-list">
+      {{range .Events}}{{template "managed-log-row" .}}{{else}}<div class="empty">没有匹配的日志。</div>{{end}}
+    </div>
+  </form>
+  {{if .Page.Total}}<div class="panel-footer">{{template "pagination" .}}</div>{{end}}
+</section>
+{{template "shell-end" .}}
+{{end}}
+
+{{define "query-hidden-fields"}}
+{{range $key, $value := .}}
+  {{if and $value (not (hasSuffix $key "_local")) (ne $key "offset")}}
+  <input type="hidden" name="{{$key}}" value="{{$value}}">
+  {{end}}
+{{end}}
+{{end}}
+
+{{define "managed-log-row"}}
+<article class="log-row managed-log-row {{.Severity}} {{if .Review.ArchivedAt}}archived{{end}}" data-log-row data-event='{{eventJSON .}}'>
+  <label class="log-select" aria-label="选择日志 {{.ID}}"><input type="checkbox" name="event_id" value="{{.ID}}" data-log-checkbox></label>
+  <time>{{formatClock .OccurredAt}}</time>
+  <a class="event-type" href="{{queryURL "/logs" "event_type" .EventType}}">{{.EventType}}</a>
+  <div class="message">
+    <div class="review-line">
+      <strong>{{eventActor .}}</strong>
+      <span class="chip {{reviewStatusClass .Review.Status}}">{{reviewStatusLabel .Review.Status}}</span>
+      {{if .Review.ArchivedAt}}<span class="chip warning">已归档</span>{{end}}
+      {{if .Review.Note}}<span class="chip">有备注</span>{{end}}
+    </div>
+    <span class="message-summary">{{eventSummary .}}</span>
+    <p>{{if .License}}{{shortID .License}}{{else}}{{.CitizenID}}{{end}}{{if .Discord}} · {{shortID .Discord}}{{end}}{{if .Steam}} · {{shortID .Steam}}{{end}}</p>
+    {{$chips := eventMetaChips .}}{{if $chips}}
+    <div class="meta-chips">
+      {{range $chips}}<span>{{.}}</span>{{end}}
+    </div>
+    {{end}}
+  </div>
+  <code>{{.ServerName}}</code>
+  <div class="row-actions">
+    {{if playerIdentifier .}}<a class="chip info" href="/players/{{urlPath (playerIdentifier .)}}"><svg class="chip-icon"><use href="#icon-user"></use></svg><span>玩家</span></a>{{end}}
+    {{if .CoordsX}}<a class="chip success" href="{{queryURL "/geo" "player" (playerIdentifier .)}}"><svg class="chip-icon"><use href="#icon-crosshair"></use></svg><span>坐标</span></a>{{end}}
+    <button class="chip {{.Severity}}" type="button" data-open-log><svg class="chip-icon"><use href="#icon-eye"></use></svg><span>{{if .Resource}}{{.Resource}}{{else}}{{.Severity}}{{end}}</span></button>
+  </div>
+</article>
+{{end}}
