@@ -135,6 +135,7 @@ func (s *Server) Routes() http.Handler {
 
 	mux.HandleFunc("GET /", s.requireAuth(s.dashboard))
 	mux.HandleFunc("GET /logs", s.requireAuth(s.logsPage))
+	mux.HandleFunc("GET /logs/{id}", s.requireAuth(s.logDetail))
 	mux.HandleFunc("GET /logs/export.csv", s.requireAuth(s.exportLogsCSV))
 	mux.HandleFunc("GET /logs/stream", s.requireAuth(s.streamLogs))
 	mux.HandleFunc("POST /logs/{id}/review", s.requireAuth(s.requireRole(canManageLogs)(s.requireCSRF(s.reviewLog))))
@@ -434,6 +435,7 @@ func (s *Server) parseTemplatesIn(loc *time.Location, lang string) (*template.Te
 			}
 			return string(out)
 		},
+		"intPtr":         intPtr,
 		"metaString":     metaString,
 		"eventActor":     eventActor,
 		"eventSummary":   eventSummary,
@@ -767,6 +769,7 @@ type pageData struct {
 	PlayerStats   logs.PlayerSummary
 	AccountLinks  []logs.AccountLink
 	GeoMap        GeoMapConfig
+	Event         logs.Event
 	NewAPIKey     string
 	Error         string
 	Notice        string
@@ -858,6 +861,27 @@ func (s *Server) logsPage(w http.ResponseWriter, r *http.Request) {
 	data.AIJSONMethods = s.activeAIJSONMethods(r.Context())
 	applyPageQuery(data.Query, data.Page)
 	s.render(w, r, "logs.html", data)
+}
+
+func (s *Server) logDetail(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		http.Error(w, "bad id", http.StatusBadRequest)
+		return
+	}
+	event, err := s.logStore.Get(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, "query error", http.StatusInternalServerError)
+		return
+	}
+	data := s.baseDataForRequest(r, "logs.detail_title", "logs")
+	data.Event = event
+	data.AIJSONMethods = s.activeAIJSONMethods(r.Context())
+	s.render(w, r, "log_detail.html", data)
 }
 
 func (s *Server) exportLogsCSV(w http.ResponseWriter, r *http.Request) {
