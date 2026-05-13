@@ -37,6 +37,8 @@ docker compose up --build
 
 ## 部署
 
+- 自有服务器：详见 [docs/SELF_HOST.md](docs/SELF_HOST.md)
+- Docker 镜像：GitHub Actions 会在 `main` 分支和 `v*` 标签上自动构建并推送到 GHCR，用法见 [docs/SELF_HOST.md](docs/SELF_HOST.md) 或 [docs/ZEABUR.md](docs/ZEABUR.md)
 - Zeabur：详见 [docs/ZEABUR.md](docs/ZEABUR.md)
 - 插件集成：详见 [docs/INTEGRATION.md](docs/INTEGRATION.md)
 

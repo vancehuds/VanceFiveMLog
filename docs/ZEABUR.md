@@ -2,7 +2,9 @@
 
 [English Version](ZEABUR.en.md)
 
-本项目已支持 Zeabur 部署。Zeabur 会识别仓库根目录的 `Dockerfile` 构建 Go 服务，应用启动时会自动读取 Zeabur 注入的 `PORT` 端口。
+本项目已支持 Zeabur 部署。你可以让 Zeabur 直接识别仓库根目录的 `Dockerfile` 构建 Go 服务，也可以使用 GitHub Actions 自动构建并推送到 GitHub Container Registry（GHCR）后，让 Zeabur 拉取预构建镜像。应用启动时会自动读取 Zeabur 注入的 `PORT` 端口。
+
+如果你要部署到自己的服务器，请阅读 [自有服务器部署教程](SELF_HOST.md)。
 
 ## 前置准备
 
@@ -10,17 +12,31 @@
 2. 确认仓库根目录包含 `Dockerfile`。
 3. 不需要上传 `.env`，生产环境变量在 Zeabur 控制台配置。
 
+## Docker 镜像自动构建
+
+仓库已内置 GitHub Actions 工作流：`.github/workflows/docker-image.yml`。
+
+- Pull Request 到 `main`：只构建 Docker 镜像做校验，不推送。
+- Push 到 `main`：构建并推送 `ghcr.io/<github-owner>/<repo>:main`。
+- Push `v*` 标签：构建并推送对应版本标签，例如 `ghcr.io/<github-owner>/<repo>:v1.0.0`。
+- 每次可发布的构建也会生成 `sha-...` 标签，适合生产环境锁定到某一次提交。
+- 镜像名会自动转为小写，避免 GHCR/Docker 镜像名称包含大写导致发布失败。
+
+如果仓库或 GHCR Package 是私有的，Zeabur 拉取镜像时需要配置 Registry 凭据；如果希望 Zeabur 免登录拉取，请在 GitHub Package 设置中将镜像设为 Public。
+
 ## 1. 创建 Zeabur 项目
 
 1. 登录 Zeabur 控制台。
 2. 创建一个新 Project。
 3. 先添加一个 PostgreSQL 服务，等待数据库初始化完成。
-4. 再添加一个 Git 服务，选择本项目仓库。
-5. 构建方式选择 Dockerfile。如果 Zeabur 自动识别到根目录 `Dockerfile`，保持默认即可。
+4. 再添加应用服务，二选一：
+   - **Git / Dockerfile 构建**：添加 Git 服务，选择本项目仓库，构建方式选择 Dockerfile。如果 Zeabur 自动识别到根目录 `Dockerfile`，保持默认即可。
+   - **GHCR 预构建镜像**：等待 GitHub Actions 成功后，添加 Docker Images 服务，镜像填写 `ghcr.io/<github-owner>/<repo>:main`、`ghcr.io/<github-owner>/<repo>:v1.0.0` 或某个 `sha-...` 标签。
+5. 如果使用 Docker Images 服务，将端口配置为 `8080`，类型选择 HTTP。启动命令保持为空，镜像默认命令会启动应用。
 
 ## 2. 配置环境变量
 
-在 Git 服务的 Variables 中配置：
+在 Git 服务或 Docker Images 服务的 Variables 中配置：
 
 ```env
 APP_ENV=production
@@ -91,8 +107,13 @@ ensure vancefivemlog
 - **启动时报数据库连接变量缺失**：给 Git 服务配置 `DATABASE_URL`，或确认 PostgreSQL 服务变量已正确绑定到 Git 服务。
 - **登录失败或没有管理员**：确认首次启动时设置了 `INITIAL_ADMIN_USERNAME` 和 `INITIAL_ADMIN_PASSWORD`。如果数据库已有管理员，请在后台"系统设置"中管理账号。
 - **FiveM 无法写入日志**：确认 endpoint 使用公网 HTTPS 域名，API Key 没有多余空格，并查看 FiveM 控制台里的 HTTP 状态码。`status=0` 表示 FXServer 没拿到 HTTP 响应，通常是 DNS、TLS、防火墙或实际加载的 endpoint 配置问题。
+- **GitHub Actions 没有推送镜像**：确认触发的是 `main` 分支 push 或 `v*` tag；Pull Request 只做构建校验，不会推送 GHCR。
+- **Zeabur 拉取 GHCR 镜像失败**：确认镜像地址全小写、标签存在，并检查 GHCR Package 是否为 Public；私有镜像需要在 Zeabur 配置 Registry 凭据。
+- **部署后仍是旧版本**：如果使用 `:main` 标签，请在 Zeabur 重新部署；如果使用版本标签或 `sha-...` 标签，请更新 Zeabur 中的镜像标签后重新部署。
 
 ## 6. 官方参考
 
 - [Zeabur Deploy Go App](https://zeabur.com/docs/en-US/guides/go)
 - [Zeabur Deploying with Dockerfile](https://zeabur.com/docs/en-US/deploy/methods/dockerfile)
+- [Zeabur Docker Image](https://zeabur.com/docs/en-US/deploy/methods/custom-docker-image)
+- [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)

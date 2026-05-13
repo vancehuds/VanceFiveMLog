@@ -1,6 +1,8 @@
 # Zeabur Deployment Guide
 
-This project supports Zeabur deployment. Zeabur will detect the `Dockerfile` in the repository root to build the Go service, and the application will automatically read the `PORT` injected by Zeabur at startup.
+This project supports Zeabur deployment. You can let Zeabur detect the `Dockerfile` in the repository root and build the Go service directly, or use GitHub Actions to build and push a Docker image to GitHub Container Registry (GHCR), then let Zeabur pull the prebuilt image. The application automatically reads the `PORT` injected by Zeabur at startup.
+
+If you want to deploy on your own server, read the [Self-Hosted Deployment Guide](SELF_HOST.en.md).
 
 ## Prerequisites
 
@@ -8,17 +10,31 @@ This project supports Zeabur deployment. Zeabur will detect the `Dockerfile` in 
 2. Ensure the repository root contains `Dockerfile`.
 3. Do not upload `.env`; production environment variables are configured in the Zeabur console.
 
+## Automatic Docker Image Builds
+
+The repository includes a GitHub Actions workflow: `.github/workflows/docker-image.yml`.
+
+- Pull requests to `main`: build the Docker image for validation only, without pushing.
+- Pushes to `main`: build and push `ghcr.io/<github-owner>/<repo>:main`.
+- Pushes of `v*` tags: build and push the matching version tag, such as `ghcr.io/<github-owner>/<repo>:v1.0.0`.
+- Publishable builds also get a `sha-...` tag, which is useful when you want production to pin a specific commit.
+- The image name is converted to lowercase automatically to avoid GHCR/Docker publish failures caused by uppercase repository names.
+
+If the repository or GHCR package is private, Zeabur needs registry credentials to pull the image. If you want Zeabur to pull without authentication, make the GitHub Package public.
+
 ## 1. Create a Zeabur Project
 
 1. Log in to the Zeabur console.
 2. Create a new Project.
 3. First, add a PostgreSQL service and wait for the database to initialize.
-4. Then add a Git service and select this project repository.
-5. Choose Dockerfile as the build method. If Zeabur auto-detects the root `Dockerfile`, keep the default.
+4. Then add the application service. Choose one path:
+   - **Git / Dockerfile build**: Add a Git service, select this repository, and choose Dockerfile as the build method. If Zeabur auto-detects the root `Dockerfile`, keep the default.
+   - **GHCR prebuilt image**: After GitHub Actions succeeds, add a Docker Images service and set the image to `ghcr.io/<github-owner>/<repo>:main`, `ghcr.io/<github-owner>/<repo>:v1.0.0`, or a specific `sha-...` tag.
+5. If you use the Docker Images service, configure port `8080` as HTTP. Leave the start command empty; the image default command starts the app.
 
 ## 2. Configure Environment Variables
 
-Configure in the Git service's Variables:
+Configure in the Git service's or Docker Images service's Variables:
 
 ```env
 APP_ENV=production
@@ -89,8 +105,13 @@ After restarting the FiveM server, you should see heartbeat status and live logs
 - **Database connection error on startup**: Configure `DATABASE_URL` for the Git service, or confirm that PostgreSQL service variables are correctly bound to the Git service.
 - **Login failed or no admin exists**: Confirm `INITIAL_ADMIN_USERNAME` and `INITIAL_ADMIN_PASSWORD` were set on first startup. If the database already has admins, manage accounts from **System Settings** in the admin panel.
 - **FiveM cannot write logs**: Confirm the endpoint uses a public HTTPS domain, the API Key has no extra spaces, and check HTTP status codes in the FiveM console. `status=0` means FXServer didn't receive an HTTP response, usually due to DNS, TLS, firewall issues, or the actual loaded endpoint configuration problem.
+- **GitHub Actions did not push an image**: Confirm the trigger was a push to `main` or a `v*` tag. Pull requests only validate the build and do not push to GHCR.
+- **Zeabur cannot pull the GHCR image**: Confirm the image path is lowercase, the tag exists, and the GHCR Package is Public. Private images require registry credentials in Zeabur.
+- **Deployment still runs an old version**: If you use the `:main` tag, redeploy in Zeabur. If you use a version tag or `sha-...` tag, update the image tag in Zeabur and redeploy.
 
 ## 6. Official References
 
 - [Zeabur Deploy Go App](https://zeabur.com/docs/en-US/guides/go)
 - [Zeabur Deploying with Dockerfile](https://zeabur.com/docs/en-US/deploy/methods/dockerfile)
+- [Zeabur Docker Image](https://zeabur.com/docs/en-US/deploy/methods/custom-docker-image)
+- [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)

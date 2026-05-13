@@ -37,6 +37,8 @@ Open `http://localhost:8080` and log in with the `INITIAL_ADMIN_*` values from `
 
 ## Deploy
 
+- Self-hosted server: see [docs/SELF_HOST.en.md](docs/SELF_HOST.en.md)
+- Docker image: GitHub Actions automatically builds and pushes to GHCR on the `main` branch and `v*` tags; see [docs/SELF_HOST.en.md](docs/SELF_HOST.en.md) or [docs/ZEABUR.en.md](docs/ZEABUR.en.md)
 - Zeabur: see [docs/ZEABUR.en.md](docs/ZEABUR.en.md)
 - Plugin integration: see [docs/INTEGRATION.en.md](docs/INTEGRATION.en.md)
 
