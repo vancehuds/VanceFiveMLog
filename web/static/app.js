@@ -1197,6 +1197,7 @@ function renderLogRow(event) {
       <div class="row-actions">
         ${playerID ? `<a class="chip info" href="/players/${encodeURIComponent(playerID)}">${icon("user", "chip-icon")}<span>${escapeHTML(t("common.player"))}</span></a>` : ""}
         ${event.coords_x !== undefined && event.coords_x !== null ? `<a class="chip success" href="/geo?player=${encodeURIComponent(playerID)}">${icon("crosshair", "chip-icon")}<span>${escapeHTML(t("detail.coords"))}</span></a>` : ""}
+        <a class="chip" href="/logs/${encodeURIComponent(event.id || "")}">${icon("link", "chip-icon")}<span>${escapeHTML(t("common.open"))}</span></a>
         <button class="chip ${sev}" type="button" data-open-log>${icon("eye", "chip-icon")}<span>${escapeHTML(resource || sev)}</span></button>
       </div>
     </article>

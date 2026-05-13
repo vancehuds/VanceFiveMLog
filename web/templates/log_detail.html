@@ -1,0 +1,100 @@
+{{define "log_detail.html"}}
+{{template "shell-start" .}}
+<section class="panel" data-log-row data-event='{{eventJSON .Event}}'>
+  <div class="panel-head">
+    <div>
+      <h2>{{.Event.EventType}}</h2>
+      <div class="panel-subtitle mono">#{{.Event.ID}} · {{formatTime .Event.OccurredAt}} · {{.Event.ServerName}}</div>
+    </div>
+    <div class="toolbar">
+      <a class="btn" href="/logs"><svg class="icon"><use href="#icon-search"></use></svg><span>{{t "logs.back_to_search"}}</span></a>
+      <a class="btn" href="{{queryURL "/logs" "event_type" .Event.EventType}}"><svg class="icon"><use href="#icon-filter"></use></svg><span>{{t "logs.same_type"}}</span></a>
+      {{if playerIdentifier .Event}}<a class="btn" href="/players/{{urlPath (playerIdentifier .Event)}}"><svg class="icon"><use href="#icon-route"></use></svg><span>{{t "player.timeline"}}</span></a>{{end}}
+      {{if .Event.CoordsX}}<a class="btn" href="{{queryURL "/geo" "player" (playerIdentifier .Event) "event_type" .Event.EventType}}"><svg class="icon"><use href="#icon-crosshair"></use></svg><span>{{t "detail.coords"}}</span></a>{{end}}
+      <button class="btn primary" type="button" data-open-log><svg class="icon"><use href="#icon-eye"></use></svg><span>{{t "logs.open_dialog"}}</span></button>
+    </div>
+  </div>
+  <div class="panel-body stack">
+    <div class="detail-grid">
+      <div><span>{{t "detail.server"}}</span><strong>{{.Event.ServerName}}</strong></div>
+      <div><span>{{t "common.event"}}</span><strong>{{.Event.EventType}}</strong></div>
+      <div><span>{{t "detail.severity"}}</span><strong>{{.Event.Severity}}</strong></div>
+      <div><span>{{t "detail.time"}}</span><strong>{{formatTime .Event.OccurredAt}}</strong></div>
+      <div><span>{{t "common.created"}}</span><strong>{{formatTime .Event.CreatedAt}}</strong></div>
+      <div><span>{{t "detail.player"}}</span><strong>{{eventActor .Event}}</strong></div>
+      <div><span>License</span><strong>{{.Event.License}}</strong></div>
+      <div><span>Discord</span><strong>{{.Event.Discord}}</strong></div>
+      <div><span>Steam</span><strong>{{.Event.Steam}}</strong></div>
+      <div><span>CitizenID</span><strong>{{.Event.CitizenID}}</strong></div>
+      <div><span>{{t "detail.resource"}}</span><strong>{{.Event.Resource}}</strong></div>
+      <div><span>{{t "detail.source"}}</span><strong>{{intPtr .Event.PlayerSource}}</strong></div>
+      <div><span>{{t "detail.coords"}}</span><strong>{{coords .Event}}</strong></div>
+      <div><span>{{t "common.status"}}</span><strong>{{reviewStatusLabel .Event.Review.Status}}</strong></div>
+      <div><span>{{t "note"}}</span><strong>{{if .Event.Review.Note}}{{.Event.Review.Note}}{{else}}{{t "common.no_note"}}{{end}}</strong></div>
+    </div>
+
+    <section class="review-panel">
+      <div class="review-panel-head">
+        <div>
+          <h3>{{t "logs.message"}}</h3>
+          <span>{{eventSummary .Event}}</span>
+        </div>
+        <span class="chip {{reviewStatusClass .Event.Review.Status}}">{{reviewStatusLabel .Event.Review.Status}}</span>
+      </div>
+      <div class="log-detail-message">
+        <p>{{.Event.Message}}</p>
+        <div class="toolbar">
+          {{if .Event.Review.ArchivedAt}}<span class="chip warning">{{t "archived"}} · {{formatTimePtr .Event.Review.ArchivedAt}}</span>{{end}}
+          {{if .Event.Review.UpdatedAt}}<span class="chip">{{t "logs.reviewed"}} · {{formatTimePtr .Event.Review.UpdatedAt}}</span>{{end}}
+          {{if .Event.Review.UpdatedByName}}<span class="chip">{{.Event.Review.UpdatedByName}}</span>{{end}}
+        </div>
+      </div>
+    </section>
+
+    {{if .Admin.CanManageLogs}}
+    <section class="review-panel">
+      <div class="review-panel-head">
+        <div>
+          <h3>{{t "review.title"}}</h3>
+          <span>{{t "review.panel_note"}}</span>
+        </div>
+        <span class="chip info">#{{.Event.ID}}</span>
+      </div>
+      <form class="review-form" method="post" action="/logs/{{.Event.ID}}/review">
+        <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+        <input type="hidden" name="return_to" value="{{.CurrentPath}}">
+        <div class="review-controls">
+          <label>
+            <span>{{t "common.status"}}</span>
+            <select class="select" name="status">
+              <option value="normal" {{if eq .Event.Review.Status "normal"}}selected{{end}}>{{t "review.status.normal"}}</option>
+              <option value="suspicious" {{if eq .Event.Review.Status "suspicious"}}selected{{end}}>{{t "review.status.suspicious"}}</option>
+              <option value="violation" {{if eq .Event.Review.Status "violation"}}selected{{end}}>{{t "review.status.violation"}}</option>
+            </select>
+          </label>
+          <label>
+            <span>{{t "note"}}</span>
+            <textarea class="textarea" name="note" rows="3" placeholder="{{t "review.note_placeholder"}}">{{.Event.Review.Note}}</textarea>
+          </label>
+        </div>
+        <div class="review-actions">
+          <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-save"></use></svg><span>{{t "review.save"}}</span></button>
+          <button class="btn" type="submit" formaction="/logs/{{.Event.ID}}/archive"><svg class="icon"><use href="#icon-archive"></use></svg><span>{{t "archive"}}</span></button>
+        </div>
+      </form>
+    </section>
+    {{end}}
+
+    <section class="json-panel">
+      <div class="json-toolbar">
+        <div>
+          <h3>{{t "json.metadata"}}</h3>
+          <span>{{t "json.display_formatted"}}</span>
+        </div>
+      </div>
+      <pre class="detail-json">{{jsonPretty .Event.Metadata}}</pre>
+    </section>
+  </div>
+</section>
+{{template "shell-end" .}}
+{{end}}

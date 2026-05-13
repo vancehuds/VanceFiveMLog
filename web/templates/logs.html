@@ -159,6 +159,7 @@
   <div class="row-actions">
     {{if playerIdentifier .}}<a class="chip info" href="/players/{{urlPath (playerIdentifier .)}}"><svg class="chip-icon"><use href="#icon-user"></use></svg><span>{{t "common.player"}}</span></a>{{end}}
     {{if .CoordsX}}<a class="chip success" href="{{queryURL "/geo" "player" (playerIdentifier .)}}"><svg class="chip-icon"><use href="#icon-crosshair"></use></svg><span>{{t "detail.coords"}}</span></a>{{end}}
+    <a class="chip" href="/logs/{{.ID}}"><svg class="chip-icon"><use href="#icon-link"></use></svg><span>{{t "common.open"}}</span></a>
     <button class="chip {{.Severity}}" type="button" data-open-log><svg class="chip-icon"><use href="#icon-eye"></use></svg><span>{{if .Resource}}{{.Resource}}{{else}}{{.Severity}}{{end}}</span></button>
   </div>
 </article>

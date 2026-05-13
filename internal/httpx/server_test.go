@@ -455,6 +455,59 @@ func TestLogRowRendersFullEventDataAndEncodedLinks(t *testing.T) {
 	}
 }
 
+func TestLogDetailTemplateRendersEventAndReviewControls(t *testing.T) {
+	server := &Server{templatesDir: filepath.Join("..", "..", "web", "templates"), timeZone: "Asia/Shanghai"}
+	tmpl, err := server.parseTemplates()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	source := 42
+	var out strings.Builder
+	err = tmpl.ExecuteTemplate(&out, "log_detail.html", pageData{
+		Title:     "日志详情",
+		Active:    "logs",
+		Admin:     auth.Admin{Username: "admin", Role: auth.RoleAdmin},
+		CSRFToken: "csrf",
+		Event: logs.Event{
+			ID:           7,
+			ServerName:   "city",
+			EventType:    "money_change",
+			Severity:     "warning",
+			PlayerSource: &source,
+			PlayerName:   "Vance",
+			License:      "license:abc",
+			Resource:     "qb-core",
+			Message:      "cash changed",
+			Metadata:     json.RawMessage(`{"amount":100,"money_type":"cash"}`),
+			OccurredAt:   time.Unix(10, 0).UTC(),
+			CreatedAt:    time.Unix(11, 0).UTC(),
+			Review: logs.EventReview{
+				Status: logs.ReviewStatusSuspicious,
+				Note:   "watch",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rendered := out.String()
+	for _, want := range []string{
+		`#7`,
+		`/logs/7/review`,
+		`/logs/7/archive`,
+		`/players/license:abc`,
+		`cash changed`,
+		`&#34;amount&#34;: 100`,
+		`watch`,
+	} {
+		if !strings.Contains(rendered, want) {
+			t.Fatalf("missing %q: %s", want, rendered)
+		}
+	}
+}
+
 func TestLogsTemplateRendersManagementControlsByRole(t *testing.T) {
 	server := &Server{templatesDir: filepath.Join("..", "..", "web", "templates")}
 	tmpl, err := server.parseTemplates()

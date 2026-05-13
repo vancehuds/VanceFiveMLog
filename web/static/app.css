@@ -576,6 +576,12 @@ button:hover .chip-icon {
   letter-spacing: 0;
 }
 
+.panel-subtitle {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .panel-subhead,
 .panel-footer {
   display: flex;
@@ -993,6 +999,13 @@ button.chip {
 
 button.chip:hover {
   border-color: currentColor;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+a.chip:hover {
+  border-color: currentColor;
+  color: var(--text);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
@@ -2007,6 +2020,18 @@ pre {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.log-detail-message {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+
+.log-detail-message p {
+  margin: 0;
+  color: var(--soft);
+  overflow-wrap: anywhere;
 }
 
 .log-insight {

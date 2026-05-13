@@ -192,6 +192,41 @@ func (s *Store) Query(ctx context.Context, q Query) ([]Event, error) {
 	return scanEvents(rows)
 }
 
+func (s *Store) Get(ctx context.Context, id int64) (Event, error) {
+	if id <= 0 {
+		return Event{}, pgx.ErrNoRows
+	}
+	rows, err := s.db.Query(ctx, `
+		SELECT e.id, e.server_id, s.name, e.event_type, e.severity, e.player_source,
+			coalesce(e.player_name, ''),
+			coalesce(e.license, ''), coalesce(e.discord, ''), coalesce(e.steam, ''),
+			coalesce(e.citizenid, ''), coalesce(e.resource, ''), e.message,
+			e.coords_x, e.coords_y, e.coords_z, e.metadata, e.occurred_at, e.created_at,
+			coalesce(r.status, 'normal'), coalesce(r.note, ''), r.archived_at, r.archived_by,
+			r.updated_by, r.updated_at, coalesce(archived_admin.username, ''),
+			coalesce(updated_admin.username, '')
+		FROM log_events e
+		JOIN servers s ON s.id = e.server_id
+		LEFT JOIN log_event_reviews r ON r.event_id = e.id
+		LEFT JOIN admins archived_admin ON archived_admin.id = r.archived_by
+		LEFT JOIN admins updated_admin ON updated_admin.id = r.updated_by
+		WHERE e.id = $1
+	`, id)
+	if err != nil {
+		return Event{}, err
+	}
+	defer rows.Close()
+
+	events, err := scanEvents(rows)
+	if err != nil {
+		return Event{}, err
+	}
+	if len(events) == 0 {
+		return Event{}, pgx.ErrNoRows
+	}
+	return events[0], nil
+}
+
 func querySQL(q Query) (string, []any) {
 	q = normalizeQuery(q)
 	var args []any

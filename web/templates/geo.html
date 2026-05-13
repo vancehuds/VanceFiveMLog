@@ -83,6 +83,7 @@
         </div>
         <div class="row-actions">
           <a class="chip" href="{{queryURL "/logs" "player" (playerIdentifier .) "event_type" .EventType}}"><svg class="chip-icon"><use href="#icon-search"></use></svg><span>{{t "geo.logs"}}</span></a>
+          <a class="chip" href="/logs/{{.ID}}"><svg class="chip-icon"><use href="#icon-link"></use></svg><span>{{t "common.open"}}</span></a>
           <button class="chip {{.Severity}}" type="button" data-open-log><svg class="chip-icon"><use href="#icon-eye"></use></svg><span>{{t "json.detail"}}</span></button>
         </div>
       </article>
