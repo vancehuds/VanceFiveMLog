@@ -10,6 +10,15 @@ function appTimeZone() {
   return document.body?.dataset.timeZone || "Asia/Shanghai";
 }
 
+function t(key, replacements = {}) {
+  const catalog = window.VFL_I18N && typeof window.VFL_I18N === "object" ? window.VFL_I18N : {};
+  let value = catalog[key] || key;
+  Object.entries(replacements).forEach(([name, replacement]) => {
+    value = value.replaceAll(`{${name}}`, String(replacement));
+  });
+  return value;
+}
+
 function escapeHTML(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -39,9 +48,9 @@ function reviewStatus(event) {
 }
 
 function reviewStatusLabel(status) {
-  if (status === "suspicious") return "可疑";
-  if (status === "violation") return "违规";
-  return "正常";
+  if (status === "suspicious") return t("review.status.suspicious");
+  if (status === "violation") return t("review.status.violation");
+  return t("review.status.normal");
 }
 
 function reviewStatusClass(status) {
@@ -463,7 +472,7 @@ function displayValue(value, format = "text", options = {}) {
   } else if (formatName === "coords" || formatName === "coordinates") {
     output = formatCoordinates(mapped);
   } else if (formatName === "boolean" || formatName === "bool" || formatName === "yes_no") {
-    output = mapped === true || mapped === "true" || mapped === 1 || mapped === "1" ? "是" : "否";
+    output = mapped === true || mapped === "true" || mapped === 1 || mapped === "1" ? t("boolean.yes") : t("boolean.no");
   } else if (formatName === "list" || formatName === "tags") {
     output = Array.isArray(mapped) ? mapped.map((item) => displayValue(item, "text")).filter(Boolean).join(options.separator || ", ") : String(mapped);
   } else if (typeof mapped === "object") {
@@ -620,7 +629,7 @@ function renderAIJSONSections(method, event, sections) {
       return `
         <section class="ai-json-section">
           <div class="ai-json-section-title">
-            <h4>${escapeHTML(section.title || "详情")}</h4>
+            <h4>${escapeHTML(section.title || t("json.detail"))}</h4>
             ${badges ? `<div class="metadata-pills">${badges}</div>` : ""}
           </div>
           ${fields}
@@ -662,7 +671,7 @@ function renderAIJSONLists(method, event, lists) {
       }).join("");
       return `
         <section class="ai-json-list">
-          <h4>${escapeHTML(listSpec.title || "列表")}</h4>
+          <h4>${escapeHTML(listSpec.title || t("json.list"))}</h4>
           <div>${items}</div>
         </section>
       `;
@@ -709,7 +718,7 @@ function renderAIJSONTables(method, event, tables) {
       return `
         <div class="ai-json-table-wrap">
           <div class="ai-json-table-title">
-            <h4>${escapeHTML(tableSpec.title || "表格")}</h4>
+            <h4>${escapeHTML(tableSpec.title || t("json.table"))}</h4>
             ${caption}
           </div>
           <table class="inventory-table ai-json-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
@@ -763,7 +772,7 @@ function renderAIJSONMethod(method, event) {
       <div class="insight-head">
         <div>
           <h3>${escapeHTML(title)}</h3>
-          <p>${escapeHTML(spec.description || method.description || "saved display method")}</p>
+          <p>${escapeHTML(spec.description || method.description || t("ai_json.saved_display_method"))}</p>
         </div>
         <div class="metadata-pills">${badgeHTML}</div>
       </div>
@@ -788,7 +797,7 @@ function populateAIJSONSelector(event) {
   const target = document.querySelector("[data-ai-json-render]");
   if (!select) return;
   const methods = matchingAIJSONMethods(event);
-  select.innerHTML = `<option value="">AI 解析方案</option>` + methods.map((method) => `<option value="${escapeHTML(method.id)}">${escapeHTML(method.name || `#${method.id}`)}</option>`).join("");
+  select.innerHTML = `<option value="">${escapeHTML(t("ai_json.method_label"))}</option>` + methods.map((method) => `<option value="${escapeHTML(method.id)}">${escapeHTML(method.name || `#${method.id}`)}</option>`).join("");
   select.disabled = methods.length === 0;
   if (!methods.length) {
     if (target) target.innerHTML = "";
@@ -808,35 +817,35 @@ function renderSelectedAIJSONMethod() {
 
 function fullAIJSONSpecTemplate() {
   return {
-    title: "JSON 解析",
-    description: "面向日志详情的结构化展示",
+    title: t("ai_json.default.title"),
+    description: t("ai_json.template.description"),
     summary_template: "{action} {item} {amount}",
     badges: [
-      { label: "动作", path: "action", format: "text", tone: "info" },
-      { label: "状态", path: "status", format: "text", tone: "auto" },
+      { label: t("detail.action"), path: "action", format: "text", tone: "info" },
+      { label: t("common.status"), path: "status", format: "text", tone: "auto" },
     ],
     metrics: [
-      { label: "数量", path: "amount", format: "number" },
-      { label: "差异", path: "delta", format: "delta", tone: "auto" },
+      { label: t("ai_json.template.amount"), path: "amount", format: "number" },
+      { label: t("ai_json.template.delta"), path: "delta", format: "delta", tone: "auto" },
     ],
     fields: [
-      { label: "玩家", path: "character_name", paths: ["player_name"], format: "text" },
-      { label: "原因", path: "reason", format: "text", span: "wide" },
-      { label: "坐标", path: "coords", format: "coords", span: "wide" },
+      { label: t("common.player"), path: "character_name", paths: ["player_name"], format: "text" },
+      { label: t("detail.reason"), path: "reason", format: "text", span: "wide" },
+      { label: t("detail.coords"), path: "coords", format: "coords", span: "wide" },
     ],
     sections: [
       {
-        title: "上下文",
+        title: t("ai_json.template.context"),
         fields: [
-          { label: "职业", path: "job", format: "text" },
-          { label: "帮派", path: "gang", format: "text" },
+          { label: t("detail.job"), path: "job", format: "text" },
+          { label: t("detail.gang"), path: "gang", format: "text" },
           { label: "Resource", path: "resource", format: "text" },
         ],
       },
     ],
     lists: [
       {
-        title: "变化列表",
+        title: t("ai_json.template.change_list"),
         path: "changes",
         title_path: "label",
         subtitle_path: "name",
@@ -851,12 +860,12 @@ function fullAIJSONSpecTemplate() {
     ],
     tables: [
       {
-        title: "明细表",
+        title: t("ai_json.template.detail_table"),
         path: "changes",
         limit: 80,
         columns: [
           { label: "Key", path: "key", format: "text" },
-          { label: "名称", path: "label", sub_path: "name", format: "text" },
+          { label: t("ai_json.name"), path: "label", sub_path: "name", format: "text" },
           { label: "Before", path: "before", format: "number", align: "right" },
           { label: "After", path: "after", format: "number", align: "right" },
           { label: "Delta", path: "delta", format: "delta", align: "right" },
@@ -864,7 +873,7 @@ function fullAIJSONSpecTemplate() {
       },
     ],
     json_blocks: [
-      { title: "原始 metadata", path: "" },
+      { title: t("json.raw_metadata"), path: "" },
     ],
   };
 }
@@ -909,7 +918,7 @@ function renderInventoryInsight(event) {
   const changes = normalizeInventoryChanges(meta.changes);
   if (!changes.length) return "";
   const resource = String(event.resource || "").toLowerCase();
-  const label = resource.includes("ox_inventory") ? "ox_inventory 物品差异" : "物品差异";
+  const label = resource.includes("ox_inventory") ? t("insight.inventory_ox") : t("insight.inventory");
   const rows = changes.map(({ slot, change }) => {
     const title = change.label || change.name || "item";
     const subtitle = change.label && change.name && change.label !== change.name ? change.name : "";
@@ -957,11 +966,11 @@ function renderInventoryInsight(event) {
 
 function moneyInsightRows(event) {
   const rows = [
-    ["账户", metaValue(event, "money_type", "account")],
-    ["操作", metaValue(event, "operation")],
-    ["金额", metaValue(event, "amount")],
-    ["余额", metaValue(event, "balance")],
-    ["原因", metaValue(event, "reason")],
+    [t("detail.account"), metaValue(event, "money_type", "account")],
+    [t("detail.action"), metaValue(event, "operation")],
+    [t("detail.amount"), metaValue(event, "amount")],
+    [t("detail.balance"), metaValue(event, "balance")],
+    [t("detail.reason"), metaValue(event, "reason")],
   ];
   return rows.filter(([, value]) => value !== "").map(([label, value]) => field(label, value)).join("");
 }
@@ -973,7 +982,7 @@ function renderMoneyInsight(event) {
   return `
     <section class="timeline-insight">
       <div class="insight-strip money">
-        <strong>资金变动</strong>
+        <strong>${escapeHTML(t("insight.money_change"))}</strong>
         <span>${escapeHTML(eventSummary(event))}</span>
       </div>
       <div class="compact-detail-grid">${rows}</div>
@@ -994,7 +1003,7 @@ function renderGenericInsight(event) {
   return `
     <section class="timeline-insight">
       <div class="insight-strip">
-        <strong>解析摘要</strong>
+        <strong>${escapeHTML(t("insight.summary"))}</strong>
         <div class="metadata-pills">${pills}</div>
       </div>
     </section>
@@ -1014,8 +1023,8 @@ function renderLogJSON(event, view = state.activeJSONView || "metadata") {
   const raw = view === "event" ? event : metadata(event);
   const display = expandEmbeddedJSON(raw);
   pre.innerHTML = highlightedJSON(display.value);
-  if (title) title.textContent = view === "event" ? "完整事件 JSON" : "Metadata JSON";
-  if (note) note.textContent = display.expanded ? "已展开嵌套 JSON 字符串" : "格式化显示";
+  if (title) title.textContent = view === "event" ? t("ai_json.full_event_json") : "Metadata JSON";
+  if (note) note.textContent = display.expanded ? t("json.expanded") : t("json.display_formatted");
   document.querySelectorAll("[data-json-view]").forEach((button) => {
     button.classList.toggle("active", button.dataset.jsonView === view);
   });
@@ -1073,7 +1082,7 @@ function hydrateTimelineCards() {
     if (pre) {
       const display = expandEmbeddedJSON(metadata(event));
       pre.innerHTML = highlightedJSON(display.value);
-      if (note) note.textContent = display.expanded ? "已展开嵌套 JSON 字符串" : "格式化 JSON";
+      if (note) note.textContent = display.expanded ? t("json.expanded") : t("json.formatted");
     }
   });
 }
@@ -1091,7 +1100,7 @@ function selectedLogCount() {
 function updateSelectionCount() {
   const count = selectedLogCount();
   document.querySelectorAll("[data-selection-count]").forEach((node) => {
-    node.textContent = `${count} selected`;
+    node.textContent = `${count} ${t("logs.selected")}`;
   });
   const all = Array.from(document.querySelectorAll("[data-log-checkbox]"));
   document.querySelectorAll("[data-select-page-logs]").forEach((checkbox) => {
@@ -1119,11 +1128,12 @@ function bindBulkLogControls() {
       const submitter = event.submitter;
       const action = submitter?.dataset.bulkAction || "";
       const count = selectedLogCount();
-      if (count === 0 && !window.confirm("未选择单条日志，将对当前筛选结果最多 5000 条执行操作。继续？")) {
+      if (count === 0 && !window.confirm(t("archive.no_selection_confirm"))) {
         event.preventDefault();
         return;
       }
-      if (action === "archive" && !window.confirm(`确认归档 ${count || "当前筛选结果最多 5000 条"} 日志？`)) {
+      const target = count || t("archive.bulk_filter_target");
+      if (action === "archive" && !window.confirm(t("archive.bulk_confirm", { target }))) {
         event.preventDefault();
       }
     });
@@ -1177,7 +1187,7 @@ function renderLogRow(event) {
         <div class="review-line">
           <strong>${escapeHTML(player)}</strong>
           <span class="chip ${reviewStatusClass(status)}">${reviewStatusLabel(status)}</span>
-          ${archived ? `<span class="chip warning">已归档</span>` : ""}
+          ${archived ? `<span class="chip warning">${escapeHTML(t("archived"))}</span>` : ""}
         </div>
         <span class="message-summary">${escapeHTML(message)}</span>
         <p>${escapeHTML(identity)}</p>
@@ -1185,8 +1195,8 @@ function renderLogRow(event) {
       </div>
       <code>${escapeHTML(server)}</code>
       <div class="row-actions">
-        ${playerID ? `<a class="chip info" href="/players/${encodeURIComponent(playerID)}">${icon("user", "chip-icon")}<span>玩家</span></a>` : ""}
-        ${event.coords_x !== undefined && event.coords_x !== null ? `<a class="chip success" href="/geo?player=${encodeURIComponent(playerID)}">${icon("crosshair", "chip-icon")}<span>坐标</span></a>` : ""}
+        ${playerID ? `<a class="chip info" href="/players/${encodeURIComponent(playerID)}">${icon("user", "chip-icon")}<span>${escapeHTML(t("common.player"))}</span></a>` : ""}
+        ${event.coords_x !== undefined && event.coords_x !== null ? `<a class="chip success" href="/geo?player=${encodeURIComponent(playerID)}">${icon("crosshair", "chip-icon")}<span>${escapeHTML(t("detail.coords"))}</span></a>` : ""}
         <button class="chip ${sev}" type="button" data-open-log>${icon("eye", "chip-icon")}<span>${escapeHTML(resource || sev)}</span></button>
       </div>
     </article>
@@ -1216,8 +1226,8 @@ function bindControls() {
     button.addEventListener("click", () => {
       state.paused = !state.paused;
       const label = button.querySelector("span");
-      if (label) label.textContent = state.paused ? "继续实时" : "暂停实时";
-      else button.textContent = state.paused ? "继续实时" : "暂停实时";
+      if (label) label.textContent = state.paused ? t("dashboard.resume_live") : t("dashboard.pause_live");
+      else button.textContent = state.paused ? t("dashboard.resume_live") : t("dashboard.pause_live");
     });
   });
 
@@ -1248,9 +1258,9 @@ function bindControls() {
           accountDetailField("Last Seen", fullTime(parsed.last_seen)),
         ].join("");
         actions.innerHTML = identifier ? [
-          `<a class="chip info" href="/players/${encodeURIComponent(identifier)}">${icon("route", "chip-icon")}<span>玩家时间轴</span></a>`,
-          `<a class="chip" href="/logs?player=${encodeURIComponent(identifier)}">${icon("filter", "chip-icon")}<span>日志筛选</span></a>`,
-          parsed.discords && parsed.discords.length ? `<a class="chip" href="/logs?player=${encodeURIComponent(parsed.discords[0])}">Discord 日志</a>` : "",
+          `<a class="chip info" href="/players/${encodeURIComponent(identifier)}">${icon("route", "chip-icon")}<span>${escapeHTML(t("player.timeline"))}</span></a>`,
+          `<a class="chip" href="/logs?player=${encodeURIComponent(identifier)}">${icon("filter", "chip-icon")}<span>${escapeHTML(t("player.filter_logs"))}</span></a>`,
+          parsed.discords && parsed.discords.length ? `<a class="chip" href="/logs?player=${encodeURIComponent(parsed.discords[0])}">Discord ${escapeHTML(t("geo.logs"))}</a>` : "",
         ].join("") : "";
         dialog.showModal();
       }
@@ -1271,22 +1281,22 @@ function bindControls() {
         state.currentLogEvent = parsed;
         state.activeJSONView = "metadata";
         detail.innerHTML = [
-          field("服务器", parsed.server_name),
-          field("事件", parsed.event_type),
-          field("级别", parsed.severity),
-          field("时间", fullTime(parsed.occurred_at)),
-          field("玩家", actorName(parsed)),
+          field(t("detail.server"), parsed.server_name),
+          field(t("common.event"), parsed.event_type),
+          field(t("detail.severity"), parsed.severity),
+          field(t("detail.time"), fullTime(parsed.occurred_at)),
+          field(t("detail.player"), actorName(parsed)),
           field("License", parsed.license),
           field("Discord", parsed.discord),
           field("Steam", parsed.steam),
           field("CitizenID", parsed.citizenid),
           field("Job", metaValue(parsed, "job")),
           field("Gang", metaValue(parsed, "gang")),
-          field("金额/物品", eventSummary(parsed)),
+          field(t("detail.item_or_amount"), eventSummary(parsed)),
           field("Resource", parsed.resource),
           field("Source", parsed.player_source),
-          field("坐标", coords),
-          playerID ? `<div class="detail-actions"><a class="chip info" href="/players/${encodeURIComponent(playerID)}">${icon("route", "chip-icon")}<span>玩家时间轴</span></a><a class="chip" href="/logs?player=${encodeURIComponent(playerID)}">${icon("filter", "chip-icon")}<span>日志筛选</span></a></div>` : "",
+          field(t("detail.coords"), coords),
+          playerID ? `<div class="detail-actions"><a class="chip info" href="/players/${encodeURIComponent(playerID)}">${icon("route", "chip-icon")}<span>${escapeHTML(t("player.timeline"))}</span></a><a class="chip" href="/logs?player=${encodeURIComponent(playerID)}">${icon("filter", "chip-icon")}<span>${escapeHTML(t("player.filter_logs"))}</span></a></div>` : "",
         ].join("");
         if (insight) insight.innerHTML = renderLogInsight(parsed);
         hydrateReviewForm(parsed);
@@ -1337,7 +1347,7 @@ function bindControls() {
         try {
           textarea.value = JSON.stringify(JSON.parse(textarea.value || "{}"), null, 2);
         } catch {
-          window.alert("展示方案 JSON 不是有效 JSON。");
+          window.alert(t("json.format_error"));
         }
       }
     }
@@ -1372,7 +1382,7 @@ function bindControls() {
 
   document.querySelectorAll("[data-review-form]").forEach((form) => {
     form.addEventListener("submit", (event) => {
-      if (event.submitter?.matches("[data-review-archive]") && !window.confirm("确认归档这条日志？")) {
+      if (event.submitter?.matches("[data-review-archive]") && !window.confirm(t("archive.confirm"))) {
         event.preventDefault();
       }
     });
@@ -1384,7 +1394,7 @@ function bindControls() {
         const id = form.querySelector("[data-ai-json-id]")?.value || "";
         if (!id) {
           event.preventDefault();
-          window.alert("请先从右侧选择一个方案。");
+          window.alert(t("template.select_method_first"));
           return;
         }
         form.action = `/ai-json/methods/${encodeURIComponent(id)}`;
@@ -1399,7 +1409,7 @@ function bindControls() {
         button.disabled = true;
         button.setAttribute("aria-busy", "true");
         form.classList.add("ai-json-form-generating");
-        if (label) label.textContent = "AI 生成中...";
+        if (label) label.textContent = t("ai_json.action.generating");
         if (iconNode) iconNode.setAttribute("hidden", "");
         if (status) status.hidden = false;
       }

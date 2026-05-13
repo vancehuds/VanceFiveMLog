@@ -1,15 +1,15 @@
 {{define "dashboard.html"}}
 {{template "shell-start" .}}
 <section class="grid metrics">
-  <div class="metric"><span><svg class="metric-icon"><use href="#icon-database"></use></svg>today events</span><strong>{{.Stats.TodayTotal}}</strong></div>
-  <div class="metric"><span><svg class="metric-icon"><use href="#icon-alert"></use></svg>24h warnings</span><strong>{{.Stats.Warnings}}</strong></div>
-  <div class="metric"><span><svg class="metric-icon"><use href="#icon-alert"></use></svg>24h errors</span><strong>{{.Stats.Errors}}</strong></div>
-  <div class="metric"><span><svg class="metric-icon"><use href="#icon-server"></use></svg>active servers</span><strong>{{.Stats.Servers}}</strong></div>
+  <div class="metric"><span><svg class="metric-icon"><use href="#icon-database"></use></svg>{{t "dashboard.today_events"}}</span><strong>{{.Stats.TodayTotal}}</strong></div>
+  <div class="metric"><span><svg class="metric-icon"><use href="#icon-alert"></use></svg>{{t "dashboard.warnings"}}</span><strong>{{.Stats.Warnings}}</strong></div>
+  <div class="metric"><span><svg class="metric-icon"><use href="#icon-alert"></use></svg>{{t "dashboard.errors"}}</span><strong>{{.Stats.Errors}}</strong></div>
+  <div class="metric"><span><svg class="metric-icon"><use href="#icon-server"></use></svg>{{t "dashboard.active_servers"}}</span><strong>{{.Stats.Servers}}</strong></div>
 </section>
 
 <section class="grid two dashboard-insight">
   <div class="panel">
-    <div class="panel-head"><h2>24 小时事件趋势</h2><span class="chip info">HOURLY</span></div>
+    <div class="panel-head"><h2>{{t "dashboard.trend"}}</h2><span class="chip info">HOURLY</span></div>
     <div class="panel-body">
       <div class="spark-grid">
         {{range .HourBuckets}}
@@ -18,13 +18,13 @@
           {{if .Errors}}<span class="spark-error" style="height:{{percent .Errors $.MaxBucket}}"></span>{{end}}
         </div>
         {{else}}
-        <div class="empty">暂无趋势数据。</div>
+        <div class="empty">{{t "dashboard.empty_trend"}}</div>
         {{end}}
       </div>
     </div>
   </div>
   <div class="panel">
-    <div class="panel-head"><h2>24 小时热点事件</h2><span class="chip warning">TOP TYPES</span></div>
+    <div class="panel-head"><h2>{{t "dashboard.hot_events"}}</h2><span class="chip warning">TOP TYPES</span></div>
     <div class="panel-body stack">
       {{range .TopEvents}}
       <a class="rank-row" href="{{queryURL "/logs" "event_type" .EventType}}">
@@ -33,7 +33,7 @@
         <strong class="mono">{{.Total}}</strong>
       </a>
       {{else}}
-      <div class="empty">暂无热点事件。</div>
+      <div class="empty">{{t "dashboard.empty_hot"}}</div>
       {{end}}
     </div>
   </div>
@@ -42,30 +42,30 @@
 <section class="grid two">
   <div class="panel">
     <div class="panel-head">
-      <h2>实时日志流</h2>
+      <h2>{{t "dashboard.live_stream"}}</h2>
       <div class="toolbar">
-        <button class="btn" type="button" data-live-toggle><svg class="icon"><use href="#icon-pause"></use></svg><span>暂停实时</span></button>
-        <button class="btn" type="button" data-clear-log><svg class="icon"><use href="#icon-trash"></use></svg><span>清空当前视图</span></button>
+        <button class="btn" type="button" data-live-toggle><svg class="icon"><use href="#icon-pause"></use></svg><span>{{t "dashboard.pause_live"}}</span></button>
+        <button class="btn" type="button" data-clear-log><svg class="icon"><use href="#icon-trash"></use></svg><span>{{t "dashboard.clear_view"}}</span></button>
       </div>
     </div>
     <div class="log-list" data-live-log-list>
-      {{range .Events}}{{template "log-row" .}}{{else}}<div class="empty">暂无日志，等待插件上报。</div>{{end}}
+      {{range .Events}}{{template "log-row" .}}{{else}}<div class="empty">{{t "dashboard.empty_live"}}</div>{{end}}
     </div>
   </div>
   <div class="panel">
-    <div class="panel-head"><h2>服务器健康</h2><span class="chip info">HEARTBEAT</span></div>
+    <div class="panel-head"><h2>{{t "dashboard.health"}}</h2><span class="chip info">HEARTBEAT</span></div>
     <div class="panel-body">
       <table class="table">
-        <thead><tr><th>Name</th><th>Health</th><th>Last Seen</th></tr></thead>
+        <thead><tr><th>Name</th><th>Health</th><th>{{t "settings.last_seen"}}</th></tr></thead>
         <tbody>
           {{range .Servers}}
           <tr>
             <td>{{.Name}}</td>
             <td><span class="chip {{serverHealthClass .}}">{{serverHealth .}}</span></td>
-            <td class="mono">{{if .LastSeenAt}}{{formatTimePtr .LastSeenAt}}{{else}}never{{end}}</td>
+            <td class="mono">{{if .LastSeenAt}}{{formatTimePtr .LastSeenAt}}{{else}}{{t "common.never"}}{{end}}</td>
           </tr>
           {{else}}
-          <tr><td colspan="3">尚未创建服务器 API Key</td></tr>
+          <tr><td colspan="3">{{t "dashboard.server.no_key"}}</td></tr>
           {{end}}
         </tbody>
       </table>

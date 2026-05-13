@@ -465,6 +465,48 @@ button:hover .chip-icon {
   font-size: 11px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.lang-option {
+  border: 0;
+  border-radius: 6px;
+  min-width: 34px;
+  height: 30px;
+  padding: 0 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: 700 11px/1 var(--mono);
+  letter-spacing: 0;
+}
+
+.lang-option:hover,
+.lang-option.active {
+  background: rgba(93, 212, 157, 0.14);
+  color: var(--text);
+}
+
+.login-language-switcher {
+  justify-self: center;
+  margin-bottom: 14px;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -2668,6 +2710,13 @@ pre {
   }
   .source-card-copy span {
     white-space: normal;
+  }
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .topbar-actions {
+    justify-content: flex-start;
   }
   .grid.metrics {
     grid-template-columns: repeat(2, 1fr);

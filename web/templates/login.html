@@ -1,28 +1,36 @@
 {{define "login.html"}}
 <!doctype html>
-<html lang="zh-CN">
+<html lang="{{.HTMLLang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090b0d">
-  <title>VanceFlog 登录</title>
+  <title>VanceFlog {{.Title}}</title>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <link rel="stylesheet" href="/static/app.css">
   {{if .TurnstileEnabled}}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>{{end}}
 </head>
 <body>
   <main class="login-shell">
+    <form id="login-language-form" method="post" action="/language" hidden>
+      <input type="hidden" name="return_to" value="/login">
+    </form>
     <form class="login-panel" method="post" action="/login">
       <span class="brand-mark login-brand-mark" aria-hidden="true"><img src="/static/favicon.svg" alt=""></span>
       <h1>VanceFlog</h1>
-      <p>FiveM / Qbox 服务器审计日志控制台</p>
+      <p>{{t "login.subtitle"}}</p>
+      <div class="language-switcher login-language-switcher" role="group" aria-label="{{t "lang.label"}}">
+        {{range .Languages}}
+        <button class="lang-option {{if eq $.Lang .Code}}active{{end}}" form="login-language-form" type="submit" name="lang" value="{{.Code}}" {{if eq $.Lang .Code}}aria-current="true"{{end}}>{{.ShortLabel}}</button>
+        {{end}}
+      </div>
       {{if .Error}}<div class="error-box">{{.Error}}</div>{{end}}
       <div class="field">
-        <label for="username">USERNAME</label>
+        <label for="username">{{t "login.username"}}</label>
         <input class="input" id="username" name="username" autocomplete="username" required>
       </div>
       <div class="field" style="margin-top:12px">
-        <label for="password">PASSWORD</label>
+        <label for="password">{{t "login.password"}}</label>
         <input class="input" id="password" name="password" type="password" autocomplete="current-password" required>
       </div>
       {{if .TurnstileEnabled}}
@@ -30,10 +38,10 @@
         <div class="cf-turnstile" data-sitekey="{{.TurnstileSiteKey}}" data-theme="dark"></div>
       </div>
       {{end}}
-      <button class="btn primary" style="width:100%;margin-top:18px" type="submit">登录</button>
+      <button class="btn primary" style="width:100%;margin-top:18px" type="submit">{{t "login.submit"}}</button>
       <a class="login-source" href="https://github.com/vancehuds/VanceFiveMLog" target="_blank" rel="noopener noreferrer">
         <span>AGPL-3.0-or-later</span>
-        <strong>前往 GitHub 开源仓库</strong>
+        <strong>{{t "login.github"}}</strong>
       </a>
     </form>
   </main>

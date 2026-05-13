@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/vancehuds/VanceFiveMLog/internal/aijson"
 	"github.com/vancehuds/VanceFiveMLog/internal/auth"
+	"github.com/vancehuds/VanceFiveMLog/internal/i18n"
 	"github.com/vancehuds/VanceFiveMLog/internal/logs"
 	"github.com/vancehuds/VanceFiveMLog/internal/serverkeys"
 	"github.com/vancehuds/VanceFiveMLog/internal/settings"
@@ -130,6 +131,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /login", s.loginPage)
 	mux.HandleFunc("POST /login", s.login)
 	mux.HandleFunc("POST /logout", s.requireAuth(s.requireCSRF(s.logout)))
+	mux.HandleFunc("POST /language", s.setLanguage)
 
 	mux.HandleFunc("GET /", s.requireAuth(s.dashboard))
 	mux.HandleFunc("GET /logs", s.requireAuth(s.logsPage))
@@ -334,7 +336,8 @@ func parseLimitedForm(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, data any) {
-	tmpl, err := s.parseTemplatesIn(s.currentLocation(r.Context()))
+	lang := i18n.FromRequest(r)
+	tmpl, err := s.parseTemplatesIn(s.currentLocation(r.Context()), lang)
 	if err != nil {
 		s.log.Error("parse templates", "error", err)
 		http.Error(w, "template error", http.StatusInternalServerError)
@@ -348,14 +351,31 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, name string, dat
 }
 
 func (s *Server) parseTemplates() (*template.Template, error) {
-	return s.parseTemplatesIn(timezone.Load(s.timeZone))
+	return s.parseTemplatesIn(timezone.Load(s.timeZone), i18n.DefaultLanguage)
 }
 
-func (s *Server) parseTemplatesIn(loc *time.Location) (*template.Template, error) {
+func (s *Server) parseTemplatesIn(loc *time.Location, lang string) (*template.Template, error) {
 	if loc == nil {
 		loc = timezone.Load(s.timeZone)
 	}
+	lang = i18n.Normalize(lang)
 	funcs := template.FuncMap{
+		"t": func(key string) string {
+			return i18n.T(lang, key)
+		},
+		"i18nJSON": func() template.JS {
+			return template.JS(i18n.ClientCatalogJSON(lang))
+		},
+		"htmlLang": func(code string) string {
+			return i18n.LanguageInfo(code).HTML
+		},
+		"pageLangURL": pageLangURL,
+		"formatPageOf": func(current, total int) string {
+			text := i18n.T(lang, "pagination.page_of")
+			text = strings.ReplaceAll(text, "{current}", strconv.Itoa(current))
+			text = strings.ReplaceAll(text, "{total}", strconv.Itoa(total))
+			return text
+		},
 		"aiJSONMethods": func(methods []aijson.Method) string {
 			if methods == nil {
 				methods = []aijson.Method{}
@@ -490,11 +510,11 @@ func (s *Server) parseTemplatesIn(loc *time.Location) (*template.Template, error
 		"reviewStatusLabel": func(status string) string {
 			switch logs.NormalizeReviewStatus(status) {
 			case logs.ReviewStatusSuspicious:
-				return "可疑"
+				return i18n.T(lang, "review.status.suspicious")
 			case logs.ReviewStatusViolation:
-				return "违规"
+				return i18n.T(lang, "review.status.violation")
 			default:
-				return "正常"
+				return i18n.T(lang, "review.status.normal")
 			}
 		},
 		"reviewStatusClass": func(status string) string {
@@ -610,6 +630,22 @@ func (s *Server) parseTemplatesIn(loc *time.Location) (*template.Template, error
 	return template.New("").Funcs(funcs).ParseGlob(pattern)
 }
 
+func pageLangURL(currentPath, rawQuery, lang string) string {
+	if currentPath == "" {
+		currentPath = "/"
+	}
+	values, err := url.ParseQuery(rawQuery)
+	if err != nil {
+		values = url.Values{}
+	}
+	values.Set("lang", i18n.Normalize(lang))
+	encoded := values.Encode()
+	if encoded == "" {
+		return currentPath
+	}
+	return currentPath + "?" + encoded
+}
+
 func (s *Server) currentTimeZone(ctx context.Context) string {
 	if s.settings == nil {
 		if zone, err := timezone.Normalize(s.timeZone); err == nil {
@@ -652,13 +688,13 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	if err := s.turnstile.Verify(r.Context(), r.FormValue("cf-turnstile-response"), identity); err != nil {
 		s.loginLimiter.Fail(identity)
 		s.log.Warn("turnstile verification failed", "error", err)
-		s.renderLogin(w, r, "验证码验证失败，请重试")
+		s.renderLogin(w, r, i18n.T(i18n.FromRequest(r), "login.turnstile_failed"))
 		return
 	}
 	admin, err := s.authStore.Authenticate(r.Context(), r.FormValue("username"), r.FormValue("password"))
 	if err != nil {
 		s.loginLimiter.Fail(identity)
-		s.renderLogin(w, r, "用户名或密码错误")
+		s.renderLogin(w, r, i18n.T(i18n.FromRequest(r), "login.invalid_credentials"))
 		return
 	}
 	s.loginLimiter.Success(identity)
@@ -670,11 +706,17 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) renderLogin(w http.ResponseWriter, r *http.Request, message string) {
+	lang := i18n.FromRequest(r)
 	data := map[string]any{
-		"Title":            "登录",
+		"Title":            i18n.T(lang, "login.title"),
 		"Error":            message,
 		"TurnstileSiteKey": s.turnstile.SiteKey(),
 		"TurnstileEnabled": s.turnstile.Enabled(),
+		"Lang":             lang,
+		"HTMLLang":         i18n.LanguageInfo(lang).HTML,
+		"Languages":        i18n.SupportedLanguages(),
+		"CurrentPath":      r.URL.Path,
+		"CurrentQuery":     r.URL.RawQuery,
 	}
 	s.render(w, r, "login.html", data)
 }
@@ -684,9 +726,24 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
+func (s *Server) setLanguage(w http.ResponseWriter, r *http.Request) {
+	if err := parseLimitedForm(w, r); err != nil {
+		http.Error(w, "bad form", http.StatusBadRequest)
+		return
+	}
+	lang := i18n.Normalize(r.FormValue("lang"))
+	http.SetCookie(w, i18n.Cookie(lang, isHTTPS(r)))
+	http.Redirect(w, r, returnTo(r, "/"), http.StatusSeeOther)
+}
+
 type pageData struct {
 	Title         string
 	Active        string
+	Lang          string
+	HTMLLang      string
+	Languages     []i18n.Language
+	CurrentPath   string
+	CurrentQuery  string
 	Admin         auth.Admin
 	Admins        []auth.Admin
 	CSRFToken     string
@@ -737,6 +794,9 @@ func (s *Server) baseData(ctx context.Context, title, active string) pageData {
 	return pageData{
 		Title:         title,
 		Active:        active,
+		Lang:          i18n.DefaultLanguage,
+		HTMLLang:      i18n.LanguageInfo(i18n.DefaultLanguage).HTML,
+		Languages:     i18n.SupportedLanguages(),
 		Admin:         adminFromContext(ctx),
 		CSRFToken:     s.sessions.CSRFToken(sessionFromContext(ctx)),
 		Servers:       servers,
@@ -750,8 +810,19 @@ func (s *Server) baseData(ctx context.Context, title, active string) pageData {
 	}
 }
 
+func (s *Server) baseDataForRequest(r *http.Request, titleKey, active string) pageData {
+	lang := i18n.FromRequest(r)
+	data := s.baseData(r.Context(), i18n.T(lang, titleKey), active)
+	data.Lang = lang
+	data.HTMLLang = i18n.LanguageInfo(lang).HTML
+	data.Languages = i18n.SupportedLanguages()
+	data.CurrentPath = r.URL.Path
+	data.CurrentQuery = r.URL.RawQuery
+	return data
+}
+
 func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
-	data := s.baseData(r.Context(), "实时日志仪表盘", "dashboard")
+	data := s.baseDataForRequest(r, "dashboard.title", "dashboard")
 	loc := s.currentLocation(r.Context())
 	data.Stats, _ = s.logStore.DashboardStats(r.Context(), loc)
 	data.HourBuckets, _ = s.logStore.HourlyBuckets(r.Context(), 24, loc)
@@ -772,7 +843,7 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) logsPage(w http.ResponseWriter, r *http.Request) {
-	data := s.baseData(r.Context(), "日志检索", "logs")
+	data := s.baseDataForRequest(r, "logs.title", "logs")
 	loc := s.currentLocation(r.Context())
 	query := queryFromRequest(r, loc)
 	if query.Limit > maxLogPageLimit {
@@ -910,7 +981,7 @@ func (s *Server) bulkArchiveLogs(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) playerTimeline(w http.ResponseWriter, r *http.Request) {
-	data := s.baseData(r.Context(), "玩家行为时间轴", "players")
+	data := s.baseDataForRequest(r, "player.title", "players")
 	player := r.PathValue("id")
 	if q := strings.TrimSpace(r.URL.Query().Get("player")); q != "" {
 		limit, _ := pageParams(r, defaultPlayerPageLimit, maxPlayerPageLimit)
@@ -940,7 +1011,7 @@ func (s *Server) playerTimeline(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) accounts(w http.ResponseWriter, r *http.Request) {
-	data := s.baseData(r.Context(), "账户关联审计页", "accounts")
+	data := s.baseDataForRequest(r, "account.audit.title", "accounts")
 	data.Query = queryMap(r, s.currentLocation(r.Context()))
 	keyword := strings.TrimSpace(r.URL.Query().Get("q"))
 	limit, offset := pageParams(r, defaultAccountPageLimit, maxAccountPageLimit)
@@ -952,7 +1023,7 @@ func (s *Server) accounts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) geo(w http.ResponseWriter, r *http.Request) {
-	data := s.baseData(r.Context(), "地理位置轨迹图", "geo")
+	data := s.baseDataForRequest(r, "geo.title", "geo")
 	loc := s.currentLocation(r.Context())
 	query := queryFromRequest(r, loc)
 	query.WithCoords = true
@@ -985,40 +1056,41 @@ func (s *Server) activeAIJSONMethods(ctx context.Context) []aijson.Method {
 }
 
 func (s *Server) settingsPage(w http.ResponseWriter, r *http.Request) {
-	data := s.baseData(r.Context(), "系统设置", "settings")
+	data := s.baseDataForRequest(r, "settings.title", "settings")
 	data.Admins, _ = s.authStore.List(r.Context())
 	s.render(w, r, "settings.html", data)
 }
 
 func (s *Server) aiJSONPage(w http.ResponseWriter, r *http.Request) {
-	data := s.baseData(r.Context(), "AI JSON 解析", "ai-json")
+	data := s.baseDataForRequest(r, "ai_json.title", "ai-json")
 	if s.aiJSONStore != nil {
 		data.AIJSONMethods, _ = s.aiJSONStore.List(r.Context(), false)
 	}
-	data.AIJSONDraft = aiJSONDraftFromRequest(r)
+	data.AIJSONDraft = aiJSONDraftFromRequest(r, i18n.FromRequest(r))
 	s.render(w, r, "ai_json.html", data)
 }
 
 func (s *Server) suggestAIJSONMethod(w http.ResponseWriter, r *http.Request) {
-	data := s.baseData(r.Context(), "AI JSON 解析", "ai-json")
+	lang := i18n.FromRequest(r)
+	data := s.baseDataForRequest(r, "ai_json.title", "ai-json")
 	if s.aiJSONStore != nil {
 		data.AIJSONMethods, _ = s.aiJSONStore.List(r.Context(), false)
 	}
-	data.AIJSONDraft = aiJSONDraftFromRequest(r)
+	data.AIJSONDraft = aiJSONDraftFromRequest(r, lang)
 	cfg := s.currentAIProviderConfig(r.Context())
 	client := aijson.NewAIClient(cfg.BaseURL, cfg.APIKey, cfg.Model)
 	if !client.Configured() {
-		data.Error = "AI JSON 未配置：请 owner 在系统设置内保存 AI 提供商、API Key 和模型"
+		data.Error = i18n.T(lang, "ai_json.not_configured")
 		s.render(w, r, "ai_json.html", data)
 		return
 	}
 	prompt := strings.TrimSpace(data.AIJSONDraft.Prompt)
 	if prompt == "" {
-		prompt = "根据样例 JSON 生成一个适合安全审计人员阅读的可复用展示方案。"
+		prompt = i18n.T(lang, "ai_json.prompt_default")
 	}
 	suggestion, err := client.SuggestMethod(r.Context(), json.RawMessage(data.AIJSONDraft.Sample), prompt)
 	if err != nil {
-		data.Error = "AI 解析失败：" + err.Error()
+		data.Error = i18n.T(lang, "ai_json.suggest_failed") + err.Error()
 		s.render(w, r, "ai_json.html", data)
 		return
 	}
@@ -1028,7 +1100,7 @@ func (s *Server) suggestAIJSONMethod(w http.ResponseWriter, r *http.Request) {
 	data.AIJSONDraft.EventType = firstNonBlank(data.AIJSONDraft.EventType, suggestion.EventType)
 	data.AIJSONDraft.Resource = firstNonBlank(data.AIJSONDraft.Resource, suggestion.Resource)
 	data.AIJSONDraft.Spec = prettyJSONString(suggestion.Spec)
-	data.Notice = "AI 已生成解析方案，确认后可保存复用"
+	data.Notice = i18n.T(lang, "ai_json.generated_notice")
 	s.render(w, r, "ai_json.html", data)
 }
 
@@ -1039,10 +1111,10 @@ func (s *Server) createAIJSONMethod(w http.ResponseWriter, r *http.Request) {
 	}
 	input := aiJSONInputFromRequest(r)
 	if _, err := s.aiJSONStore.Create(r.Context(), input, adminFromContext(r.Context()).ID); err != nil {
-		data := s.baseData(r.Context(), "AI JSON 解析", "ai-json")
-		data.AIJSONDraft = aiJSONDraftFromRequest(r)
+		data := s.baseDataForRequest(r, "ai_json.title", "ai-json")
+		data.AIJSONDraft = aiJSONDraftFromRequest(r, i18n.FromRequest(r))
 		data.AIJSONMethods, _ = s.aiJSONStore.List(r.Context(), false)
-		data.Error = "保存解析方案失败：" + err.Error()
+		data.Error = i18n.T(i18n.FromRequest(r), "ai_json.save_failed") + err.Error()
 		s.render(w, r, "ai_json.html", data)
 		return
 	}
@@ -1065,11 +1137,11 @@ func (s *Server) updateAIJSONMethod(w http.ResponseWriter, r *http.Request) {
 	}
 	input := aiJSONInputFromRequest(r)
 	if _, err := s.aiJSONStore.Update(r.Context(), id, input); err != nil {
-		data := s.baseData(r.Context(), "AI JSON 解析", "ai-json")
-		data.AIJSONDraft = aiJSONDraftFromRequest(r)
+		data := s.baseDataForRequest(r, "ai_json.title", "ai-json")
+		data.AIJSONDraft = aiJSONDraftFromRequest(r, i18n.FromRequest(r))
 		data.AIJSONDraft.ID = id
 		data.AIJSONMethods, _ = s.aiJSONStore.List(r.Context(), false)
-		data.Error = "更新解析方案失败：" + err.Error()
+		data.Error = i18n.T(i18n.FromRequest(r), "ai_json.update_failed") + err.Error()
 		s.render(w, r, "ai_json.html", data)
 		return
 	}
@@ -1109,16 +1181,16 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	days, err := strconv.Atoi(r.FormValue("retention_days"))
 	if err != nil || days < 1 {
-		data := s.baseData(r.Context(), "系统设置", "settings")
-		data.Error = "保留天数必须是正整数"
+		data := s.baseDataForRequest(r, "settings.title", "settings")
+		data.Error = i18n.T(i18n.FromRequest(r), "settings.invalid_retention")
 		data.Admins, _ = s.authStore.List(r.Context())
 		s.render(w, r, "settings.html", data)
 		return
 	}
 	zone, err := timezone.Normalize(r.FormValue("time_zone"))
 	if err != nil {
-		data := s.baseData(r.Context(), "系统设置", "settings")
-		data.Error = "时区必须是有效的 IANA 时区，例如 Asia/Shanghai"
+		data := s.baseDataForRequest(r, "settings.title", "settings")
+		data.Error = i18n.T(i18n.FromRequest(r), "settings.invalid_timezone")
 		data.Admins, _ = s.authStore.List(r.Context())
 		s.render(w, r, "settings.html", data)
 		return
@@ -1143,8 +1215,8 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 			aiCfg.APIKey = currentAI.APIKey
 		}
 		if err := s.settings.SetAIProviderConfig(r.Context(), aiCfg); err != nil {
-			data := s.baseData(r.Context(), "系统设置", "settings")
-			data.Error = "AI 提供商配置无效：需要有效的 Base URL"
+			data := s.baseDataForRequest(r, "settings.title", "settings")
+			data.Error = i18n.T(i18n.FromRequest(r), "settings.invalid_ai_provider")
 			data.Admins, _ = s.authStore.List(r.Context())
 			s.render(w, r, "settings.html", data)
 			return
@@ -1159,9 +1231,9 @@ func (s *Server) createServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, key, err := s.serverStore.Create(r.Context(), r.FormValue("name"))
-	data := s.baseData(r.Context(), "系统设置", "settings")
+	data := s.baseDataForRequest(r, "settings.title", "settings")
 	if err != nil {
-		data.Error = "创建服务器失败：" + err.Error()
+		data.Error = i18n.T(i18n.FromRequest(r), "settings.create_server_failed") + err.Error()
 	} else {
 		data.NewAPIKey = key
 	}
@@ -1177,9 +1249,9 @@ func (s *Server) rotateKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key, err := s.serverStore.RotateKey(r.Context(), id)
-	data := s.baseData(r.Context(), "系统设置", "settings")
+	data := s.baseDataForRequest(r, "settings.title", "settings")
 	if err != nil {
-		data.Error = "轮换 API Key 失败：" + err.Error()
+		data.Error = i18n.T(i18n.FromRequest(r), "settings.rotate_key_failed") + err.Error()
 	} else {
 		data.NewAPIKey = key
 	}
@@ -1195,8 +1267,8 @@ func (s *Server) toggleServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := s.serverStore.ToggleActive(r.Context(), id); err != nil {
-		data := s.baseData(r.Context(), "系统设置", "settings")
-		data.Error = "切换服务器状态失败：" + err.Error()
+		data := s.baseDataForRequest(r, "settings.title", "settings")
+		data.Error = i18n.T(i18n.FromRequest(r), "settings.toggle_server_failed") + err.Error()
 		data.Admins, _ = s.authStore.List(r.Context())
 		s.render(w, r, "settings.html", data)
 		return
@@ -1223,9 +1295,9 @@ func (s *Server) createTestEvent(w http.ResponseWriter, r *http.Request) {
 		},
 		OccurredAt: &now,
 	}})
-	data := s.baseData(r.Context(), "系统设置", "settings")
+	data := s.baseDataForRequest(r, "settings.title", "settings")
 	if err != nil {
-		data.Error = "写入测试事件失败：" + err.Error()
+		data.Error = i18n.T(i18n.FromRequest(r), "settings.test_event_failed") + err.Error()
 	} else {
 		servers, _ := s.serverStore.List(r.Context())
 		serverName := ""
@@ -1240,7 +1312,7 @@ func (s *Server) createTestEvent(w http.ResponseWriter, r *http.Request) {
 			s.hub.Publish(event)
 		}
 		_ = s.serverStore.MarkEvent(r.Context(), id)
-		data.Notice = "测试事件已写入"
+		data.Notice = i18n.T(i18n.FromRequest(r), "settings.test_event_written")
 	}
 	data.Servers, _ = s.serverStore.List(r.Context())
 	data.Admins, _ = s.authStore.List(r.Context())
@@ -1248,14 +1320,14 @@ func (s *Server) createTestEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createAdmin(w http.ResponseWriter, r *http.Request) {
-	data := s.baseData(r.Context(), "系统设置", "settings")
+	data := s.baseDataForRequest(r, "settings.title", "settings")
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	role := r.FormValue("role")
 	if _, err := s.authStore.Create(r.Context(), username, password, role); err != nil {
-		data.Error = "创建管理员失败：" + err.Error()
+		data.Error = i18n.T(i18n.FromRequest(r), "settings.create_admin_failed") + err.Error()
 	} else {
-		data.Notice = "管理员已创建"
+		data.Notice = i18n.T(i18n.FromRequest(r), "settings.admin_created")
 	}
 	data.Servers, _ = s.serverStore.List(r.Context())
 	data.Admins, _ = s.authStore.List(r.Context())
@@ -1270,8 +1342,8 @@ func (s *Server) toggleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	current := adminFromContext(r.Context())
 	if _, err := s.authStore.ToggleActive(r.Context(), id, current.ID); err != nil {
-		data := s.baseData(r.Context(), "系统设置", "settings")
-		data.Error = "切换管理员状态失败：" + err.Error()
+		data := s.baseDataForRequest(r, "settings.title", "settings")
+		data.Error = i18n.T(i18n.FromRequest(r), "settings.toggle_admin_failed") + err.Error()
 		data.Admins, _ = s.authStore.List(r.Context())
 		s.render(w, r, "settings.html", data)
 		return
@@ -1285,11 +1357,11 @@ func (s *Server) resetAdminPassword(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad id", http.StatusBadRequest)
 		return
 	}
-	data := s.baseData(r.Context(), "系统设置", "settings")
+	data := s.baseDataForRequest(r, "settings.title", "settings")
 	if err := s.authStore.ResetPassword(r.Context(), id, r.FormValue("password")); err != nil {
-		data.Error = "重置密码失败：" + err.Error()
+		data.Error = i18n.T(i18n.FromRequest(r), "settings.reset_password_failed") + err.Error()
 	} else {
-		data.Notice = "管理员密码已重置"
+		data.Notice = i18n.T(i18n.FromRequest(r), "settings.admin_password_reset")
 	}
 	data.Servers, _ = s.serverStore.List(r.Context())
 	data.Admins, _ = s.authStore.List(r.Context())
@@ -1604,12 +1676,12 @@ func queryMapFromForm(r *http.Request) map[string]string {
 	return out
 }
 
-func aiJSONDraftFromRequest(r *http.Request) aiJSONDraft {
+func aiJSONDraftFromRequest(r *http.Request, lang string) aiJSONDraft {
 	id, _ := strconv.ParseInt(strings.TrimSpace(r.FormValue("id")), 10, 64)
 	source := aijson.NormalizeSource(r.FormValue("source"))
 	spec := strings.TrimSpace(r.FormValue("spec"))
 	if spec == "" {
-		spec = defaultAIJSONSpec()
+		spec = defaultAIJSONSpec(lang)
 	}
 	eventType := strings.TrimSpace(firstNonBlank(r.FormValue("event_type"), r.URL.Query().Get("event_type")))
 	resource := strings.TrimSpace(firstNonBlank(r.FormValue("resource"), r.URL.Query().Get("resource")))
@@ -1639,22 +1711,34 @@ func aiJSONInputFromRequest(r *http.Request) aijson.MethodInput {
 	}
 }
 
-func defaultAIJSONSpec() string {
-	return `{
-  "title": "JSON 解析",
-  "description": "把关键字段、指标、列表和原始片段格式化到日志详情。",
-  "summary_path": "",
-  "summary_template": "",
-  "badges": [],
-  "metrics": [],
-  "fields": [
-    { "label": "字段", "path": "", "format": "text", "span": "wide" }
-  ],
-  "sections": [],
-  "lists": [],
-  "tables": [],
-  "json_blocks": []
-}`
+func defaultAIJSONSpec(lang ...string) string {
+	code := i18n.DefaultLanguage
+	if len(lang) > 0 {
+		code = lang[0]
+	}
+	spec := map[string]any{
+		"title":            i18n.T(code, "ai_json.default.title"),
+		"description":      i18n.T(code, "ai_json.default.description"),
+		"summary_path":     "",
+		"summary_template": "",
+		"badges":           []any{},
+		"metrics":          []any{},
+		"fields": []map[string]any{{
+			"label":  i18n.T(code, "ai_json.default.field"),
+			"path":   "",
+			"format": "text",
+			"span":   "wide",
+		}},
+		"sections":    []any{},
+		"lists":       []any{},
+		"tables":      []any{},
+		"json_blocks": []any{},
+	}
+	out, err := json.MarshalIndent(spec, "", "  ")
+	if err != nil {
+		return "{}"
+	}
+	return string(out)
 }
 
 func prettyJSONString(raw json.RawMessage) string {

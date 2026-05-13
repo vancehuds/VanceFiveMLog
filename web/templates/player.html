@@ -2,7 +2,7 @@
 {{template "shell-start" .}}
 <section class="panel">
   <div class="panel-head">
-    <h2>玩家行为时间轴</h2>
+    <h2>{{t "player.timeline"}}</h2>
     <form class="toolbar" method="get" action="/players/all">
       <input class="input" name="player" placeholder="license / citizenid / discord / name" value="{{.Player}}">
       <select class="select" name="limit">
@@ -11,8 +11,8 @@
         <option value="200" {{if eq (index .Query "limit") "200"}}selected{{end}}>200 rows</option>
       </select>
       <input type="hidden" name="offset" value="0">
-      <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-route"></use></svg><span>载入时间轴</span></button>
-      {{if .Player}}<a class="btn" href="{{queryURL "/logs" "player" .Player}}"><svg class="icon"><use href="#icon-search"></use></svg><span>在日志中查询</span></a>{{end}}
+      <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-route"></use></svg><span>{{t "player.load_timeline"}}</span></button>
+      {{if .Player}}<a class="btn" href="{{queryURL "/logs" "player" .Player}}"><svg class="icon"><use href="#icon-search"></use></svg><span>{{t "player.search_in_logs"}}</span></a>{{end}}
     </form>
   </div>
   {{if .Player}}
@@ -21,11 +21,11 @@
     <div class="metric compact"><span>warnings</span><strong>{{.PlayerStats.Warnings}}</strong></div>
     <div class="metric compact"><span>errors</span><strong>{{.PlayerStats.Errors}}</strong></div>
     <div class="metric compact"><span>resources</span><strong>{{.PlayerStats.Resources}}</strong></div>
-    <div class="metric compact wide"><span>last seen</span><strong>{{if .PlayerStats.LastSeen}}{{formatTimePtr .PlayerStats.LastSeen}}{{else}}never{{end}}</strong></div>
+    <div class="metric compact wide"><span>last seen</span><strong>{{if .PlayerStats.LastSeen}}{{formatTimePtr .PlayerStats.LastSeen}}{{else}}{{t "common.never"}}{{end}}</strong></div>
   </div>
   {{end}}
   <div class="panel-subhead">
-    <h3>行为日志</h3>
+    <h3>{{t "player.logs"}}</h3>
     {{template "pagination" .}}
   </div>
   <div class="panel-body timeline">
@@ -38,8 +38,8 @@
           <span class="chip {{.Severity}}">{{.Severity}}</span>
           <a class="chip info" href="{{queryURL "/logs" "event_type" .EventType "player" $.Player}}">{{.EventType}}</a>
           {{if .Resource}}<a class="chip" href="{{queryURL "/logs" "resource" .Resource "player" $.Player}}">{{.Resource}}</a>{{end}}
-          <a class="chip" href="{{queryURL "/logs" "player" $.Player}}"><svg class="chip-icon"><use href="#icon-filter"></use></svg><span>日志筛选</span></a>
-          {{if .CoordsX}}<a class="chip success" href="{{queryURL "/geo" "player" $.Player}}"><svg class="chip-icon"><use href="#icon-route"></use></svg><span>坐标轨迹</span></a>{{end}}
+          <a class="chip" href="{{queryURL "/logs" "player" $.Player}}"><svg class="chip-icon"><use href="#icon-filter"></use></svg><span>{{t "player.filter_logs"}}</span></a>
+          {{if .CoordsX}}<a class="chip success" href="{{queryURL "/geo" "player" $.Player}}"><svg class="chip-icon"><use href="#icon-route"></use></svg><span>{{t "player.track_coords"}}</span></a>{{end}}
         </div>
         <p>{{eventSummary .}}</p>
         {{$chips := eventMetaChips .}}{{if $chips}}
@@ -50,15 +50,15 @@
         <div data-timeline-insight></div>
         <details class="timeline-metadata">
           <summary>
-            <span>元数据</span>
-            <small data-timeline-json-note>格式化 JSON</small>
+            <span>{{t "json.metadata"}}</span>
+            <small data-timeline-json-note>{{t "json.formatted"}}</small>
           </summary>
           <pre class="json-pretty-inline" data-timeline-json>{{jsonPretty .Metadata}}</pre>
         </details>
       </div>
     </div>
     {{else}}
-    <div class="empty">没有该玩家的行为日志。可在 URL 使用 `/players/{license}` 查看指定玩家。</div>
+    <div class="empty">{{t "player.empty"}}</div>
     {{end}}
   </div>
   {{if .Page.Total}}<div class="panel-footer">{{template "pagination" .}}</div>{{end}}

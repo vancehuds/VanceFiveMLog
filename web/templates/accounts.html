@@ -2,7 +2,7 @@
 {{template "shell-start" .}}
 <section class="panel">
   <div class="panel-head">
-    <h2>账户关联审计页</h2>
+    <h2>{{t "account.audit.title"}}</h2>
     <form class="toolbar" method="get" action="/accounts">
       <input class="input" name="q" placeholder="license / discord / steam / citizenid / name" value="{{index .Query "q"}}">
       <select class="select" name="limit">
@@ -11,40 +11,40 @@
         <option value="100" {{if eq (index .Query "limit") "100"}}selected{{end}}>100 rows</option>
       </select>
       <input type="hidden" name="offset" value="0">
-      <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-filter"></use></svg><span>筛选</span></button>
-      {{if index .Query "q"}}<a class="btn" href="/accounts"><svg class="icon"><use href="#icon-x"></use></svg><span>清除</span></a>{{end}}
+      <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-filter"></use></svg><span>{{t "account.filter"}}</span></button>
+      {{if index .Query "q"}}<a class="btn" href="/accounts"><svg class="icon"><use href="#icon-x"></use></svg><span>{{t "account.clear"}}</span></a>{{end}}
     </form>
   </div>
   <div class="panel-subhead">
-    <h3>账户列表</h3>
+    <h3>{{t "account.list"}}</h3>
     {{template "pagination" .}}
   </div>
   <div class="panel-body table-scroll">
     <table class="table">
       <thead>
-        <tr><th>License</th><th>Names</th><th>Discord</th><th>Steam</th><th>CitizenID</th><th>Events</th><th>Last Seen</th><th>Actions</th></tr>
+        <tr><th>License</th><th>{{t "account.names"}}</th><th>Discord</th><th>Steam</th><th>CitizenID</th><th>{{t "account.events"}}</th><th>{{t "settings.last_seen"}}</th><th>{{t "account.actions"}}</th></tr>
       </thead>
       <tbody>
         {{range .AccountLinks}}
         <tr data-account-row data-account='{{accountJSON .}}'>
           <td class="mono">{{shortID .License}}</td>
-          <td>{{join .Names ", "}} {{if lenMany .Names}}<span class="chip warning">多名称</span>{{end}}</td>
-          <td class="mono">{{join .Discords ", "}} {{if lenMany .Discords}}<span class="chip warning">多 Discord</span>{{end}}</td>
-          <td class="mono">{{join .Steams ", "}} {{if lenMany .Steams}}<span class="chip warning">多 Steam</span>{{end}}</td>
-          <td class="mono">{{join .CitizenIDs ", "}} {{if lenMany .CitizenIDs}}<span class="chip warning">多身份</span>{{end}}</td>
+          <td>{{join .Names ", "}} {{if lenMany .Names}}<span class="chip warning">{{t "account.multi_name"}}</span>{{end}}</td>
+          <td class="mono">{{join .Discords ", "}} {{if lenMany .Discords}}<span class="chip warning">{{t "account.multi_discord"}}</span>{{end}}</td>
+          <td class="mono">{{join .Steams ", "}} {{if lenMany .Steams}}<span class="chip warning">{{t "account.multi_steam"}}</span>{{end}}</td>
+          <td class="mono">{{join .CitizenIDs ", "}} {{if lenMany .CitizenIDs}}<span class="chip warning">{{t "account.multi_citizenid"}}</span>{{end}}</td>
           <td class="mono">{{.Events}}</td>
           <td class="mono">{{formatTime .LastSeen}}</td>
           <td>
             <div class="toolbar">
-              <button class="chip info" type="button" data-open-account><svg class="chip-icon"><use href="#icon-eye"></use></svg><span>查看</span></button>
-              {{if accountIdentifier .}}<a class="chip info" href="/players/{{urlPath (accountIdentifier .)}}"><svg class="chip-icon"><use href="#icon-route"></use></svg><span>时间轴</span></a>{{end}}
-              {{if accountIdentifier .}}<a class="chip" href="{{queryURL "/logs" "player" (accountIdentifier .)}}"><svg class="chip-icon"><use href="#icon-search"></use></svg><span>日志</span></a>{{end}}
+              <button class="chip info" type="button" data-open-account><svg class="chip-icon"><use href="#icon-eye"></use></svg><span>{{t "account.view"}}</span></button>
+              {{if accountIdentifier .}}<a class="chip info" href="/players/{{urlPath (accountIdentifier .)}}"><svg class="chip-icon"><use href="#icon-route"></use></svg><span>{{t "account.timeline"}}</span></a>{{end}}
+              {{if accountIdentifier .}}<a class="chip" href="{{queryURL "/logs" "player" (accountIdentifier .)}}"><svg class="chip-icon"><use href="#icon-search"></use></svg><span>{{t "geo.logs"}}</span></a>{{end}}
               {{if .Discords}}<a class="chip" href="{{queryURL "/logs" "player" (index .Discords 0)}}">Discord</a>{{end}}
             </div>
           </td>
         </tr>
         {{else}}
-        <tr><td colspan="8">暂无可关联账户数据。</td></tr>
+        <tr><td colspan="8">{{t "account.empty"}}</td></tr>
         {{end}}
       </tbody>
     </table>
@@ -54,8 +54,8 @@
 <dialog class="log-dialog account-dialog" data-account-dialog>
   <div class="panel">
     <div class="panel-head">
-      <h2>完整玩家信息</h2>
-      <button class="btn" type="button" data-close-account><svg class="icon"><use href="#icon-x"></use></svg><span>关闭</span></button>
+      <h2>{{t "account.dialog.title"}}</h2>
+      <button class="btn" type="button" data-close-account><svg class="icon"><use href="#icon-x"></use></svg><span>{{t "close"}}</span></button>
     </div>
     <div class="panel-body">
       <div class="account-detail-grid" data-account-detail></div>

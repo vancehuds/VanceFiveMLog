@@ -2,13 +2,13 @@
 {{template "shell-start" .}}
 <section class="panel geo-filter">
   <div class="panel-head">
-    <h2>轨迹筛选</h2>
-    <a class="chip info" href="{{queryURL "/logs" "server_id" (index .Query "server_id") "player" (index .Query "player") "event_type" (index .Query "event_type") "severity" (index .Query "severity") "since" (index .Query "since") "until" (index .Query "until")}}">回到日志检索</a>
+    <h2>{{t "geo.filter_title"}}</h2>
+    <a class="chip info" href="{{queryURL "/logs" "server_id" (index .Query "server_id") "player" (index .Query "player") "event_type" (index .Query "event_type") "severity" (index .Query "severity") "since" (index .Query "since") "until" (index .Query "until")}}">{{t "geo.back_logs"}}</a>
   </div>
   <div class="panel-body">
     <form class="form-row" method="get" action="/geo">
       <select class="select" name="server_id">
-        <option value="">全部服务器</option>
+        <option value="">{{t "geo.all_servers"}}</option>
         {{range .Servers}}
         <option value="{{.ID}}" {{if eq (index $.Query "server_id") (printf "%d" .ID)}}selected{{end}}>{{.Name}}</option>
         {{end}}
@@ -30,8 +30,8 @@
         <option value="500" {{if eq (index .Query "limit") "500"}}selected{{end}}>500 points</option>
       </select>
       <input type="hidden" name="offset" value="0">
-      <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-route"></use></svg><span>筛选轨迹</span></button>
-      <a class="btn" href="/geo"><svg class="icon"><use href="#icon-x"></use></svg><span>清除</span></a>
+      <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-route"></use></svg><span>{{t "geo.filter_tracks"}}</span></button>
+      <a class="btn" href="/geo"><svg class="icon"><use href="#icon-x"></use></svg><span>{{t "geo.clear"}}</span></a>
     </form>
   </div>
 </section>
@@ -39,13 +39,13 @@
   <div class="geo-map-shell">
     <div class="geo-map-toolbar">
       <div>
-        <strong>Los Santos 坐标地图</strong>
-        <span>真实底图 · FiveM X/Y 投影 · 拖拽平移 · 滚轮缩放</span>
+        <strong>{{t "geo.map_label"}}</strong>
+        <span>{{t "geo.map_note"}}</span>
       </div>
       <div class="geo-map-actions">
-        <button class="btn icon-only" type="button" data-geo-zoom="in" aria-label="放大地图" title="放大地图"><svg class="icon"><use href="#icon-plus"></use></svg></button>
-        <button class="btn icon-only" type="button" data-geo-zoom="out" aria-label="缩小地图" title="缩小地图"><svg class="icon"><use href="#icon-minus"></use></svg></button>
-        <button class="btn" type="button" data-geo-reset><svg class="icon"><use href="#icon-refresh"></use></svg><span>复位</span></button>
+        <button class="btn icon-only" type="button" data-geo-zoom="in" aria-label="{{t "geo.zoom_in"}}" title="{{t "geo.zoom_in"}}"><svg class="icon"><use href="#icon-plus"></use></svg></button>
+        <button class="btn icon-only" type="button" data-geo-zoom="out" aria-label="{{t "geo.zoom_out"}}" title="{{t "geo.zoom_out"}}"><svg class="icon"><use href="#icon-minus"></use></svg></button>
+        <button class="btn" type="button" data-geo-reset><svg class="icon"><use href="#icon-refresh"></use></svg><span>{{t "common.reset"}}</span></button>
       </div>
     </div>
     <div class="geo-map" data-geo-map data-geo-config='{{geoMapJSON .GeoMap}}'>
@@ -60,16 +60,16 @@
           </button>
           {{end}}
         {{else}}
-          <div class="empty geo-empty">暂无坐标日志。</div>
+          <div class="empty geo-empty">{{t "geo.empty_coords"}}</div>
         {{end}}
       </div>
       <div class="geo-tooltip" data-geo-tooltip hidden></div>
-      <div class="geo-scale">X/Y 坐标系</div>
+      <div class="geo-scale">{{t "geo.scale"}}</div>
     </div>
   </div>
   <div class="panel geo-events-panel">
     <div class="panel-head">
-      <h2>坐标事件</h2>
+      <h2>{{t "geo.coords_event"}}</h2>
       {{template "pagination" .}}
     </div>
     <div class="log-list">
@@ -82,11 +82,11 @@
           <p>{{coords .}}</p>
         </div>
         <div class="row-actions">
-          <a class="chip" href="{{queryURL "/logs" "player" (playerIdentifier .) "event_type" .EventType}}"><svg class="chip-icon"><use href="#icon-search"></use></svg><span>日志</span></a>
-          <button class="chip {{.Severity}}" type="button" data-open-log><svg class="chip-icon"><use href="#icon-eye"></use></svg><span>详情</span></button>
+          <a class="chip" href="{{queryURL "/logs" "player" (playerIdentifier .) "event_type" .EventType}}"><svg class="chip-icon"><use href="#icon-search"></use></svg><span>{{t "geo.logs"}}</span></a>
+          <button class="chip {{.Severity}}" type="button" data-open-log><svg class="chip-icon"><use href="#icon-eye"></use></svg><span>{{t "json.detail"}}</span></button>
         </div>
       </article>
-      {{else}}<div class="empty">暂无地理轨迹。</div>{{end}}
+      {{else}}<div class="empty">{{t "geo.empty_tracks"}}</div>{{end}}
     </div>
     {{if .Page.Total}}<div class="panel-footer">{{template "pagination" .}}</div>{{end}}
   </div>

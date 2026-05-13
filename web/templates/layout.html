@@ -1,6 +1,6 @@
 {{define "shell-start"}}
 <!doctype html>
-<html lang="zh-CN">
+<html lang="{{.HTMLLang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,9 +8,10 @@
   <title>{{.Title}} · VanceFlog</title>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <link rel="stylesheet" href="/static/app.css">
+  <script>window.VFL_I18N = {{i18nJSON}};</script>
   <script defer src="/static/app.js"></script>
 </head>
-<body data-time-zone="{{.TimeZone}}">
+<body data-time-zone="{{.TimeZone}}" data-lang="{{.Lang}}">
   <svg class="icon-sprite" aria-hidden="true" focusable="false">
     <symbol id="icon-dashboard" viewBox="0 0 24 24"><path d="M4 13.5a8 8 0 1 1 16 0"/><path d="M12 13l4-4"/><path d="M8 20h8"/><path d="M12 17v3"/></symbol>
     <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 3.5 3.5"/></symbol>
@@ -51,22 +52,22 @@
         </div>
       </div>
       <nav class="nav">
-        <a class="{{if eq .Active "dashboard"}}active{{end}}" href="/"><svg class="icon"><use href="#icon-dashboard"></use></svg><span>实时日志</span></a>
-        <a class="{{if eq .Active "logs"}}active{{end}}" href="/logs"><svg class="icon"><use href="#icon-search"></use></svg><span>日志检索</span></a>
-        <a class="{{if eq .Active "players"}}active{{end}}" href="/players/all"><svg class="icon"><use href="#icon-users"></use></svg><span>玩家时间轴</span></a>
-        <a class="{{if eq .Active "accounts"}}active{{end}}" href="/accounts"><svg class="icon"><use href="#icon-link"></use></svg><span>账户关联</span></a>
-        <a class="{{if eq .Active "geo"}}active{{end}}" href="/geo"><svg class="icon"><use href="#icon-map"></use></svg><span>地理轨迹</span></a>
+        <a class="{{if eq .Active "dashboard"}}active{{end}}" href="/"><svg class="icon"><use href="#icon-dashboard"></use></svg><span>{{t "nav.dashboard"}}</span></a>
+        <a class="{{if eq .Active "logs"}}active{{end}}" href="/logs"><svg class="icon"><use href="#icon-search"></use></svg><span>{{t "nav.logs"}}</span></a>
+        <a class="{{if eq .Active "players"}}active{{end}}" href="/players/all"><svg class="icon"><use href="#icon-users"></use></svg><span>{{t "nav.players"}}</span></a>
+        <a class="{{if eq .Active "accounts"}}active{{end}}" href="/accounts"><svg class="icon"><use href="#icon-link"></use></svg><span>{{t "nav.accounts"}}</span></a>
+        <a class="{{if eq .Active "geo"}}active{{end}}" href="/geo"><svg class="icon"><use href="#icon-map"></use></svg><span>{{t "nav.geo"}}</span></a>
         {{if .Admin.IsOwner}}
         <a class="{{if eq .Active "ai-json"}}active{{end}}" href="/ai-json"><svg class="icon"><use href="#icon-sparkles"></use></svg><span>AI JSON</span></a>
         {{end}}
         {{if .Admin.CanManageServers}}
-        <a class="{{if eq .Active "settings"}}active{{end}}" href="/settings"><svg class="icon"><use href="#icon-settings"></use></svg><span>系统设置</span></a>
+        <a class="{{if eq .Active "settings"}}active{{end}}" href="/settings"><svg class="icon"><use href="#icon-settings"></use></svg><span>{{t "nav.settings"}}</span></a>
         {{end}}
       </nav>
-      <a class="source-card" href="https://github.com/vancehuds/VanceFiveMLog" target="_blank" rel="noopener noreferrer" aria-label="打开 GitHub 开源仓库">
+      <a class="source-card" href="https://github.com/vancehuds/VanceFiveMLog" target="_blank" rel="noopener noreferrer" aria-label="{{t "github.open"}}">
         <span class="source-card-icon" aria-hidden="true"><svg class="github-icon"><use href="#icon-github"></use></svg></span>
         <span class="source-card-copy">
-          <strong>GitHub 开源仓库</strong>
+          <strong>{{t "github.repo"}}</strong>
           <span>vancehuds/VanceFiveMLog</span>
         </span>
       </a>
@@ -77,10 +78,19 @@
           <h1>{{.Title}}</h1>
           <div class="meta">admin={{.Admin.Username}} · retention={{.Retention}}d · tz={{.TimeZone}}</div>
         </div>
-        <form method="post" action="/logout">
-          <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
-          <button class="btn" type="submit"><svg class="icon"><use href="#icon-log-out"></use></svg><span>退出</span></button>
-        </form>
+        <div class="topbar-actions">
+          <form class="language-switcher" method="post" action="/language" aria-label="{{t "lang.label"}}">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <input type="hidden" name="return_to" value="{{.CurrentPath}}{{if .CurrentQuery}}?{{.CurrentQuery}}{{end}}">
+            {{range .Languages}}
+            <button class="lang-option {{if eq $.Lang .Code}}active{{end}}" type="submit" name="lang" value="{{.Code}}" {{if eq $.Lang .Code}}aria-current="true"{{end}}>{{.ShortLabel}}</button>
+            {{end}}
+          </form>
+          <form method="post" action="/logout">
+            <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+            <button class="btn" type="submit"><svg class="icon"><use href="#icon-log-out"></use></svg><span>{{t "logout"}}</span></button>
+          </form>
+        </div>
       </header>
 {{end}}
 
@@ -89,8 +99,8 @@
       <dialog class="log-dialog" data-log-dialog>
         <div class="panel">
           <div class="panel-head">
-            <h2>日志详情</h2>
-            <button class="btn" type="button" data-close-log><svg class="icon"><use href="#icon-x"></use></svg><span>关闭</span></button>
+            <h2>{{t "logs.details"}}</h2>
+            <button class="btn" type="button" data-close-log><svg class="icon"><use href="#icon-x"></use></svg><span>{{t "close"}}</span></button>
           </div>
           <div class="panel-body">
             <div class="detail-grid" data-log-detail></div>
@@ -99,8 +109,8 @@
             <section class="review-panel" data-review-panel hidden>
               <div class="review-panel-head">
                 <div>
-                  <h3>处置记录</h3>
-                  <span data-review-note>状态、备注与归档会记录管理员操作</span>
+                  <h3>{{t "review.title"}}</h3>
+                  <span data-review-note>{{t "review.panel_note"}}</span>
                 </div>
                 <span class="chip info" data-review-event-id></span>
               </div>
@@ -109,21 +119,21 @@
                 <input type="hidden" name="return_to" value="" data-return-to>
                 <div class="review-controls">
                   <label>
-                    <span>状态</span>
+                    <span>{{t "common.status"}}</span>
                     <select class="select" name="status" data-review-status>
-                      <option value="normal">正常</option>
-                      <option value="suspicious">可疑</option>
-                      <option value="violation">违规</option>
+                      <option value="normal">{{t "review.status.normal"}}</option>
+                      <option value="suspicious">{{t "review.status.suspicious"}}</option>
+                      <option value="violation">{{t "review.status.violation"}}</option>
                     </select>
                   </label>
                   <label>
-                    <span>备注</span>
-                    <textarea class="textarea" name="note" rows="3" data-review-note-field placeholder="调查结论、证据或后续动作"></textarea>
+                    <span>{{t "note"}}</span>
+                    <textarea class="textarea" name="note" rows="3" data-review-note-field placeholder="{{t "review.note_placeholder"}}"></textarea>
                   </label>
                 </div>
                 <div class="review-actions">
-                  <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-save"></use></svg><span>保存处置</span></button>
-                  <button class="btn" type="submit" data-review-archive formaction=""><svg class="icon"><use href="#icon-archive"></use></svg><span>归档</span></button>
+                  <button class="btn primary" type="submit"><svg class="icon"><use href="#icon-save"></use></svg><span>{{t "review.save"}}</span></button>
+                  <button class="btn" type="submit" data-review-archive formaction=""><svg class="icon"><use href="#icon-archive"></use></svg><span>{{t "archive"}}</span></button>
                 </div>
               </form>
             </section>
@@ -132,7 +142,7 @@
               <div class="json-toolbar">
                 <div>
                   <h3 data-log-json-title>Metadata JSON</h3>
-                  <span data-log-json-note>格式化显示</span>
+                  <span data-log-json-note>{{t "json.display_formatted"}}</span>
                 </div>
                 <div class="json-tools">
                   {{if .Admin.IsOwner}}
@@ -142,15 +152,15 @@
                     <input type="hidden" name="event_type" value="" data-ai-json-import-event-type>
                     <input type="hidden" name="resource" value="" data-ai-json-import-resource>
                     <input type="hidden" name="sample" value="" data-ai-json-import-sample>
-                    <button class="btn" type="submit"><svg class="icon"><use href="#icon-sparkles"></use></svg><span>导入 AI JSON</span></button>
+                    <button class="btn" type="submit"><svg class="icon"><use href="#icon-sparkles"></use></svg><span>{{t "ai_json.import"}}</span></button>
                   </form>
                   {{end}}
-                  <select class="select compact" data-ai-json-method aria-label="AI JSON 解析方法">
-                    <option value="">AI 解析方案</option>
+                  <select class="select compact" data-ai-json-method aria-label="{{t "ai_json.method_label"}}">
+                    <option value="">{{t "ai_json.method_label"}}</option>
                   </select>
-                  <div class="segmented-control" aria-label="JSON 显示范围">
+                  <div class="segmented-control" aria-label="{{t "json.view_scope"}}">
                     <button type="button" data-json-view="metadata" class="active">Metadata</button>
-                    <button type="button" data-json-view="event">完整事件</button>
+                    <button type="button" data-json-view="event">{{t "ai_json.full_event"}}</button>
                   </div>
                 </div>
               </div>
@@ -168,21 +178,21 @@
 
 {{define "pagination"}}
 {{if .Page.Total}}
-<nav class="pagination" aria-label="分页">
+<nav class="pagination" aria-label="{{t "pagination.label"}}">
   <div class="page-summary">
     <strong>{{.Page.From}}-{{.Page.To}}</strong>
-    <span>/ {{.Page.Total}} · 第 {{.Page.Current}} / {{.Page.TotalPages}} 页</span>
+    <span>/ {{.Page.Total}} · {{formatPageOf .Page.Current .Page.TotalPages}}</span>
   </div>
   <div class="page-controls">
     {{if .Page.HasPrev}}
-      <a class="page-btn page-nav" href="{{queryWithOffset .Query .Page.PrevOffset}}" aria-label="上一页">
+      <a class="page-btn page-nav" href="{{queryWithOffset .Query .Page.PrevOffset}}" aria-label="{{t "pagination.prev"}}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        <span>上一页</span>
+        <span>{{t "pagination.prev"}}</span>
       </a>
     {{else}}
       <span class="page-btn page-nav disabled">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        <span>上一页</span>
+        <span>{{t "pagination.prev"}}</span>
       </span>
     {{end}}
 
@@ -199,13 +209,13 @@
     </div>
 
     {{if .Page.HasNext}}
-      <a class="page-btn page-nav" href="{{queryWithOffset .Query .Page.NextOffset}}" aria-label="下一页">
-        <span>下一页</span>
+      <a class="page-btn page-nav" href="{{queryWithOffset .Query .Page.NextOffset}}" aria-label="{{t "pagination.next"}}">
+        <span>{{t "pagination.next"}}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
       </a>
     {{else}}
       <span class="page-btn page-nav disabled">
-        <span>下一页</span>
+        <span>{{t "pagination.next"}}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
       </span>
     {{end}}
@@ -232,8 +242,8 @@
   </div>
   <code>{{.ServerName}}</code>
   <div class="row-actions">
-    {{if playerIdentifier .}}<a class="chip info" href="/players/{{urlPath (playerIdentifier .)}}"><svg class="chip-icon"><use href="#icon-user"></use></svg><span>玩家</span></a>{{end}}
-    {{if .CoordsX}}<a class="chip success" href="{{queryURL "/geo" "player" (playerIdentifier .)}}"><svg class="chip-icon"><use href="#icon-crosshair"></use></svg><span>坐标</span></a>{{end}}
+    {{if playerIdentifier .}}<a class="chip info" href="/players/{{urlPath (playerIdentifier .)}}"><svg class="chip-icon"><use href="#icon-user"></use></svg><span>{{t "common.player"}}</span></a>{{end}}
+    {{if .CoordsX}}<a class="chip success" href="{{queryURL "/geo" "player" (playerIdentifier .)}}"><svg class="chip-icon"><use href="#icon-crosshair"></use></svg><span>{{t "detail.coords"}}</span></a>{{end}}
     <button class="chip {{.Severity}}" type="button" data-open-log><svg class="chip-icon"><use href="#icon-eye"></use></svg><span>{{if .Resource}}{{.Resource}}{{else}}{{.Severity}}{{end}}</span></button>
   </div>
 </article>

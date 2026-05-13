@@ -380,6 +380,41 @@ func TestLoginTemplateOmitsTurnstileWhenDisabled(t *testing.T) {
 	}
 }
 
+func TestRenderLoginUsesRequestedLanguage(t *testing.T) {
+	server := &Server{templatesDir: filepath.Join("..", "..", "web", "templates")}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/login?lang=en", nil)
+
+	server.renderLogin(rec, req, "")
+
+	rendered := rec.Body.String()
+	for _, want := range []string{`<html lang="en">`, `FiveM / Qbox server audit log console`, `Sign in`} {
+		if !strings.Contains(rendered, want) {
+			t.Fatalf("missing %q: %s", want, rendered)
+		}
+	}
+}
+
+func TestSetLanguageStoresCookieAndRedirects(t *testing.T) {
+	server := &Server{}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/language", strings.NewReader("lang=en&return_to=%2Flogs%3Fseverity%3Dwarning"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	server.setLanguage(rec, req)
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	if got := rec.Header().Get("Location"); got != "/logs?severity=warning" {
+		t.Fatalf("location = %q", got)
+	}
+	cookies := rec.Result().Cookies()
+	if len(cookies) != 1 || cookies[0].Name != "vfl_lang" || cookies[0].Value != "en" {
+		t.Fatalf("cookies = %+v", cookies)
+	}
+}
+
 func TestLogRowRendersFullEventDataAndEncodedLinks(t *testing.T) {
 	server := &Server{templatesDir: filepath.Join("..", "..", "web", "templates"), timeZone: "Asia/Shanghai"}
 	tmpl, err := server.parseTemplates()
