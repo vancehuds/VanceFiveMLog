@@ -195,3 +195,6 @@ AI_JSON_MODEL=
 ## License
 
 VanceFiveMLog is released under `AGPL-3.0-or-later`; see [LICENSE](LICENSE). Because this is a network service, modified deployments must provide their users access to the corresponding source code. See [NOTICE.en.md](NOTICE.en.md) for source URL and asset notes.
+
+## Copyright Notice
+Los Santos map is sourced from the internet. If there is any infringement, please contact me and I will delete it as soon as possible.
