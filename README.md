@@ -195,3 +195,6 @@ AI_JSON_MODEL=
 ## 许可证
 
 VanceFiveMLog 采用 `AGPL-3.0-or-later` 许可证发布；详见 [LICENSE](LICENSE)。由于这是网络服务，修改后的部署必须让用户能够访问相应源代码。源代码地址和资产说明详见 [NOTICE.md](NOTICE.md)。
+
+##版权说明
+洛圣都地图来自于网络，如果有侵权请联系我，我会尽快删除。
